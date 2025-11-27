@@ -564,23 +564,127 @@
                 c.innerHTML = `<div class="p-6 pb-24 anim-pop"><h2 class="text-3xl font-sport font-black italic mb-6 text-txt">POKEDEX</h2><div class="grid grid-cols-2 gap-3">${state.inventory.map(p => `<div class="glass p-3 rounded-xl flex flex-col items-center"><img src="${p.static}" class="w-20 h-20 object-contain mb-2"><span class="font-black text-xs uppercase text-txt">${p.name}</span></div>`).join('')}</div></div>`;
             },
 
+            // --- [UPGRADE] 배틀 설정 화면 (랜덤 매칭 & 방 만들기/참가 통합) ---
             renderBattleSetup: (c) => {
                 const ready = state.team.filter(p=>p).length === 3;
+                
+                if (!ready) {
+                     c.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full p-6 text-center">
+                            <i data-lucide="alert-triangle" class="w-12 h-12 text-yellow-500 mb-4"></i>
+                            <h2 class="text-xl font-bold text-white mb-2">Team Incomplete</h2>
+                            <p class="text-sm text-sub mb-6">You need 3 Pokemon to battle.</p>
+                            <button onclick="app.nav('team')" class="bg-accent text-white font-bold py-3 px-8 rounded-full">GO TO TEAM</button>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                    return;
+                }
+
                 c.innerHTML = `
                     <div class="flex flex-col items-center justify-center h-full p-6 anim-pop text-center bg-[url('https://images.unsplash.com/photo-1620108097950-8b4382559530?auto=format&fit=crop&w=800&q=80')] bg-cover bg-center">
-                        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
-                        <div class="relative z-10 w-full flex flex-col items-center">
-                            <h2 class="text-6xl font-sport font-black italic text-white mb-2">PVP ARENA</h2>
-                            <div class="flex justify-center gap-3 mb-12">
-                                ${state.team.map(p => `<div class="w-20 h-20 glass rounded-xl border-2 ${p?'border-accent':'border-red-500/30'} flex items-center justify-center">${p?`<img src="${p.sprite}" class="w-16 h-16 sprite-player">`:'<i data-lucide="plus" class="text-gray-400"></i>'}</div>`).join('')}
+                        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+                        <div class="relative z-10 w-full flex flex-col items-center max-w-xs">
+                            <h2 class="text-4xl font-sport font-black italic text-white mb-8">BATTLE MODE</h2>
+                            
+                            <div class="w-full mb-8">
+                                <button onclick="app.startBattle()" class="w-full bg-accent text-white font-black italic text-xl py-4 rounded-xl shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2">
+                                    <i data-lucide="swords" class="w-6 h-6"></i> QUICK MATCH
+                                </button>
+                                <p class="text-xs text-sub mt-2">Find a random opponent</p>
                             </div>
-                            ${ready ? `<button onclick="app.startBattle()" class="w-full max-w-xs bg-accent text-white font-black italic text-xl py-5 rounded-full shadow-lg hover:scale-105 transition-transform">FIND MATCH</button>` : `<button onclick="app.nav('team')" class="w-full max-w-xs bg-gray-800 text-gray-500 font-bold text-lg py-5 rounded-full">TEAM INCOMPLETE</button>`}
+
+                            <div class="w-full h-[1px] bg-white/10 mb-8"></div>
+
+                            <div class="w-full">
+                                <h3 class="text-white font-bold mb-3 uppercase tracking-wider text-sm">Private Room</h3>
+                                
+                                <div class="flex gap-2 mb-3">
+                                    <input id="room-code-input" type="number" placeholder="Enter Code" class="w-full glass bg-transparent text-white p-3 rounded-lg text-center font-sport font-bold focus:outline-none focus:border-accent border border-white/20">
+                                    <button onclick="app.joinPrivateRoom()" class="bg-gray-700 hover:bg-gray-600 text-white font-bold px-6 rounded-lg transition-colors">JOIN</button>
+                                </div>
+                                
+                                <button onclick="app.createPrivateRoom()" class="w-full glass py-3 rounded-lg text-sub hover:text-white border border-white/10 hover:border-white/30 transition-all text-sm font-bold">
+                                    + CREATE NEW ROOM
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
                 lucide.createIcons();
             },
 
+            // [NEW] 방 만들기 기능 (코드는 자동 생성됨)
+            createPrivateRoom: async () => {
+                const myTeamData = state.team.map(p => ({
+                    uid: p.uid, name: p.name, sprite: p.sprite,
+                    maxHp: p.hp, currentHp: p.hp, rank: p.rank, atk: p.atk,
+                    move: p.move, type: p.type
+                }));
+
+                // 5자리 숫자 코드 랜덤 생성
+                const code = Math.floor(10000 + Math.random() * 90000).toString(); 
+                state.battle.roomId = code;
+                state.battle.role = 'host';
+
+                // 대기 화면 표시
+                const main = $('main-content');
+                main.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full p-6 anim-pop bg-black/90">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mb-6"></div>
+                        <p class="text-sub font-bold mb-2">WAITING FOR PLAYER...</p>
+                        <h1 class="text-6xl font-sport font-black text-accent tracking-widest mb-8">${code}</h1>
+                        <p class="text-xs text-gray-500">Share this code with your friend</p>
+                        <button onclick="app.nav('battle')" class="mt-12 text-gray-400 hover:text-white underline">Cancel</button>
+                    </div>
+                `;
+
+                const roomRef = window.fb.ref(window.fb.db, `battles/${code}`);
+                await window.fb.set(roomRef, {
+                    host: myTeamData,
+                    status: 'waiting',
+                    private: true // 비공개 방 표시 (랜덤 매칭에서 잡히지 않음)
+                });
+                window.fb.onDisconnect(roomRef).remove();
+
+                app.listenToBattle();
+            },
+
+            // [NEW] 방 참가 기능
+            joinPrivateRoom: async () => {
+                const code = $('room-code-input').value;
+                if (!code || code.length < 5) return showToast("Please enter a valid code!", "error");
+
+                const myTeamData = state.team.map(p => ({
+                    uid: p.uid, name: p.name, sprite: p.sprite,
+                    maxHp: p.hp, currentHp: p.hp, rank: p.rank, atk: p.atk,
+                    move: p.move, type: p.type
+                }));
+
+                const roomRef = window.fb.ref(window.fb.db, `battles/${code}`);
+                const snapshot = await window.fb.get(roomRef);
+
+                if (!snapshot.exists()) {
+                    return showToast("Room not found!", "error");
+                }
+                const data = snapshot.val();
+                if (data.status !== 'waiting') {
+                    return showToast("Room is full or already started!", "error");
+                }
+
+                state.battle.roomId = code;
+                state.battle.role = 'guest';
+
+                await window.fb.update(roomRef, {
+                    guest: myTeamData,
+                    status: 'ready'
+                });
+
+                showToast("Joining room...");
+                app.listenToBattle();
+            },
+
+            // [MODIFIED] 랜덤 매칭 (비공개 방은 제외하고 검색)
             startBattle: async () => {
                 const myTeamData = state.team.map(p => ({
                     uid: p.uid, name: p.name, sprite: p.sprite,
@@ -588,21 +692,22 @@
                     move: p.move, type: p.type
                 }));
 
-                showToast("대전 상대를 찾는 중...", "info");
+                showToast("Searching for opponent...", "info");
                 
                 const roomsRef = window.fb.ref(window.fb.db, 'battles');
                 let snapshot;
                 try {
                     snapshot = await window.fb.get(roomsRef);
                 } catch(e) {
-                    return showToast("연결 실패! 권한 설정을 확인하세요.", "error");
+                    return showToast("Connection failed!", "error");
                 }
 
                 let joinedRoomId = null;
                 if (snapshot.exists()) {
                     const rooms = snapshot.val();
                     for (const [id, room] of Object.entries(rooms)) {
-                        if (room.status === 'waiting') {
+                        // 대기 중이면서 'private'이 아닌 방만 찾음
+                        if (room.status === 'waiting' && !room.private) {
                             joinedRoomId = id;
                             break;
                         }
@@ -616,17 +721,18 @@
                         guest: myTeamData,
                         status: 'ready'
                     });
-                    showToast("상대 발견! 접속 중...");
+                    showToast("Opponent found!");
                 } else {
                     const newRoomRef = window.fb.push(roomsRef);
                     state.battle.roomId = newRoomRef.key;
                     state.battle.role = 'host';
                     await window.fb.set(newRoomRef, {
                         host: myTeamData,
-                        status: 'waiting'
+                        status: 'waiting',
+                        private: false // 공개 방 설정
                     });
                     window.fb.onDisconnect(newRoomRef).remove();
-                    showToast("대기방 생성! 상대를 기다립니다...");
+                    showToast("Waiting for opponent...");
                 }
                 app.listenToBattle();
             },
