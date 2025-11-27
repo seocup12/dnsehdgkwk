@@ -31,7 +31,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, update, onValue, push, get, child, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, update, onValue, push, get, remove, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAbHwLLXIH8rBQ8gNMVqE5SE2O8aibfFZO",
@@ -46,7 +46,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        window.fb = { db, ref, set, update, onValue, push, get, remove };
+        window.fb = { db, ref, set, update, onValue, push, get, remove, child };
         
         window.initApp();
     </script>
@@ -119,7 +119,15 @@
             </div>
 
             <div id="view-chat" class="view-section hidden p-4">
-                <h2 class="text-2xl font-sport font-black italic text-white mb-4">CHATS</h2>
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h2 class="text-2xl font-sport font-black italic text-white">CHATS</h2>
+                        <span class="text-xs text-gray-500">Groups & Private</span>
+                    </div>
+                    <button onclick="app.deleteAllChats()" class="text-[10px] font-bold text-red-500 border border-red-500/50 px-3 py-1.5 rounded hover:bg-red-500/10 transition-colors">
+                        DELETE ALL
+                    </button>
+                </div>
                 <div id="chat-room-list" class="space-y-2 pb-20"></div>
             </div>
 
@@ -132,14 +140,12 @@
                     <h3 id="chat-title" class="font-bold text-white text-sm">Chat</h3>
                     <span class="text-[10px] text-volt font-sport">LIVE</span>
                 </div>
-                
-                <button onclick="app.confirmLeaveChat()" class="p-2 -mr-2 text-red-500 hover:text-red-400">
+                <button onclick="app.forceDeleteCurrentChat()" class="p-2 -mr-2 text-red-500 hover:text-red-400 bg-red-500/10 rounded-full">
                     <i data-lucide="trash-2" class="w-5 h-5"></i>
                 </button>
             </div>
             
-            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-black/50">
-                </div>
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-black/50"></div>
 
             <div class="p-3 bg-gray-900 border-t border-gray-800 shrink-0 mb-[env(safe-area-inset-bottom)]">
                 <form onsubmit="app.sendMessage(event)" class="flex gap-2">
@@ -212,7 +218,7 @@
 
             app.loadFeeds();
             app.loadParties();
-            app.listenChats();
+            app.listenAllChats();
         };
 
         const app = {
@@ -234,6 +240,7 @@
             showModal: (id) => document.getElementById(`modal-${id}`).classList.remove('hidden'),
             closeModals: () => document.querySelectorAll('[id^="modal-"]').forEach(el => el.classList.add('hidden')),
 
+            // --- [PARTY LIST FIX] ---
             loadParties: () => {
                 const partiesRef = window.fb.ref(window.fb.db, 'groups');
                 window.fb.onValue(partiesRef, (snapshot) => {
@@ -250,6 +257,8 @@
                         
                         const el = document.createElement('div');
                         el.className = "bg-gray-900 border border-gray-800 p-4 rounded-xl flex items-center justify-between";
+                        el.id = `party-item-${key}`; // UI 제거용 ID
+                        
                         el.innerHTML = `
                             <div class="flex items-center gap-4">
                                 <div class="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center font-sport font-bold text-xl text-volt border border-gray-700">
@@ -260,14 +269,32 @@
                                     <span class="text-[10px] text-gray-500 bg-black px-2 py-0.5 rounded border border-gray-800">${party.tag || '#Run'}</span>
                                 </div>
                             </div>
-                            <button onclick="app.joinOrChatParty('${key}', ${isMember})" class="${isMember ? 'bg-gray-800 text-volt border border-volt/30' : 'bg-volt text-black'} px-4 py-2 rounded-lg font-bold text-xs transition-transform active:scale-95">
-                                ${isMember ? 'CHAT' : 'JOIN'}
-                            </button>
+                            <div class="flex gap-2">
+                                <button onclick="app.joinOrChatParty('${key}', ${isMember})" class="${isMember ? 'bg-gray-800 text-volt border border-volt/30' : 'bg-volt text-black'} px-4 py-2 rounded-lg font-bold text-xs transition-transform active:scale-95">
+                                    ${isMember ? 'CHAT' : 'JOIN'}
+                                </button>
+                                <button onclick="app.adminDeleteGroup('${key}')" class="bg-red-900/30 border border-red-500/50 text-red-500 p-2 rounded-lg hover:bg-red-500 hover:text-white transition-colors">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
                         `;
                         list.appendChild(el);
                     });
                     lucide.createIcons();
                 });
+            },
+
+            // [🔥NEW] 무조건 서버에서 파티 삭제하는 함수
+            adminDeleteGroup: (groupId) => {
+                if(!confirm("⚠️ 경고: 이 파티를 서버에서 영구 삭제하시겠습니까?\n(방장 권한 없이도 강제로 삭제됩니다)")) return;
+
+                // 1. UI 즉시 제거
+                const el = document.getElementById(`party-item-${groupId}`);
+                if(el) el.remove();
+
+                // 2. 서버 데이터 강제 삭제
+                window.fb.remove(window.fb.ref(window.fb.db, `groups/${groupId}`));
+                window.fb.remove(window.fb.ref(window.fb.db, `messages/${groupId}`));
             },
 
             createParty: () => {
@@ -301,71 +328,161 @@
                 }
             },
 
-            listenChats: () => {
+            listenAllChats: () => {
                 const groupsRef = window.fb.ref(window.fb.db, 'groups');
                 window.fb.onValue(groupsRef, (snap) => {
-                    const list = document.getElementById('chat-room-list');
-                    list.innerHTML = '';
-                    const data = snap.val();
-                    if(!data) return;
+                    const groupData = snap.val();
+                    app.renderChatList(groupData, app.privateChatsCache);
+                });
 
-                    Object.entries(data).forEach(([key, group]) => {
-                        if(group.members && group.members[window.currentUser.uid]) {
-                            const div = document.createElement('div');
-                            div.className = "flex items-center gap-3 p-3 bg-gray-900 border border-gray-800 rounded-xl cursor-pointer active:bg-gray-800 relative group";
-                            // 클릭 시 채팅방 입장 (삭제 버튼 제외)
-                            div.onclick = (e) => {
-                                if(e.target.closest('.del-btn')) return;
-                                app.openChat(key, 'group');
-                            };
-                            
-                            div.innerHTML = `
-                                <div class="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center font-bold text-volt border border-gray-700">
-                                    ${group.name.substring(0,1)}
-                                </div>
-                                <div class="flex-1">
-                                    <h4 class="font-bold text-white text-sm">${group.name}</h4>
-                                    <p class="text-xs text-gray-500">Group Chat</p>
-                                </div>
-                                <button onclick="app.leaveGroup('${key}')" class="del-btn p-2 text-gray-600 hover:text-red-500 transition-colors">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            `;
-                            list.appendChild(div);
-                        }
+                const myPrivateRef = window.fb.ref(window.fb.db, `users/${window.currentUser.uid}/private_chats`);
+                window.fb.onValue(myPrivateRef, (snap) => {
+                    app.privateChatsCache = snap.val();
+                    window.fb.get(window.fb.ref(window.fb.db, 'groups')).then(gSnap => {
+                        app.renderChatList(gSnap.val(), app.privateChatsCache);
                     });
-                    lucide.createIcons();
                 });
             },
 
-            openChat: (chatId, type) => {
+            privateChatsCache: null,
+
+            renderChatList: (groups, privateChats) => {
+                const list = document.getElementById('chat-room-list');
+                list.innerHTML = '';
+
+                if(groups) {
+                    Object.entries(groups).forEach(([key, group]) => {
+                        if(group.members && group.members[window.currentUser.uid]) {
+                            const div = app.createChatItem(key, group.name, 'Group', 'group');
+                            list.appendChild(div);
+                        }
+                    });
+                }
+
+                if(privateChats) {
+                    Object.keys(privateChats).forEach(chatId => {
+                        const chatName = privateChats[chatId].name || "Private Chat";
+                        const div = app.createChatItem(chatId, chatName, 'Private', 'private');
+                        list.appendChild(div);
+                    });
+                }
+                
+                if(!list.hasChildNodes()) {
+                    list.innerHTML = `<div class="text-center text-gray-500 mt-10 text-xs">No active chats.</div>`;
+                }
+                lucide.createIcons();
+            },
+
+            createChatItem: (id, name, desc, type) => {
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-3 p-3 bg-gray-900 border border-gray-800 rounded-xl cursor-pointer active:bg-gray-800 relative group chat-item";
+                div.id = `chat-item-${id}`;
+                
+                div.onclick = (e) => {
+                    if(e.target.closest('.del-btn')) return;
+                    app.openChat(id, type, name);
+                };
+                
+                const icon = type === 'group' 
+                    ? `<div class="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center font-bold text-volt border border-gray-700">${name.substring(0,1)}</div>`
+                    : `<div class="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 border border-gray-700"><i data-lucide="user" class="w-5 h-5"></i></div>`;
+
+                div.innerHTML = `
+                    ${icon}
+                    <div class="flex-1">
+                        <h4 class="font-bold text-white text-sm">${name}</h4>
+                        <p class="text-xs text-gray-500">${desc}</p>
+                    </div>
+                    <button onclick="app.forceDelete('${id}', '${type}')" class="del-btn p-2 text-gray-600 hover:text-red-500 transition-colors">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                `;
+                return div;
+            },
+
+            // --- [DELETE LOGIC] ---
+            forceDelete: (id, type) => {
+                if(!confirm("이 채팅방을 완전히 삭제하시겠습니까? (복구 불가)")) return;
+
+                const el = document.getElementById(`chat-item-${id}`);
+                if(el) el.remove();
+
+                if (type === 'group') {
+                    // 그룹 강제 삭제 (파티 목록에서 제거와 동일)
+                    window.fb.remove(window.fb.ref(window.fb.db, `groups/${id}`));
+                    window.fb.remove(window.fb.ref(window.fb.db, `messages/${id}`));
+                } else {
+                    window.fb.remove(window.fb.ref(window.fb.db, `users/${window.currentUser.uid}/private_chats/${id}`));
+                    window.fb.remove(window.fb.ref(window.fb.db, `messages/${id}`));
+                }
+            },
+
+            deleteAllChats: () => {
+                if(!confirm("정말 모든 채팅방을 삭제하시겠습니까?")) return;
+
+                const myPrivateRef = window.fb.ref(window.fb.db, `users/${window.currentUser.uid}/private_chats`);
+                window.fb.get(myPrivateRef).then(snap => {
+                    if(snap.exists()) {
+                        const chats = snap.val();
+                        Object.keys(chats).forEach(chatId => {
+                            window.fb.remove(window.fb.ref(window.fb.db, `messages/${chatId}`));
+                        });
+                        window.fb.remove(myPrivateRef);
+                    }
+                });
+
+                window.fb.get(window.fb.ref(window.fb.db, 'groups')).then(snap => {
+                    if(!snap.exists()) return;
+                    const groups = snap.val();
+                    
+                    Object.entries(groups).forEach(([groupId, group]) => {
+                        if(group.members && group.members[window.currentUser.uid]) {
+                            // 방장 여부 상관없이 그냥 다 나가버림/지워버림
+                            const isHost = group.host === window.currentUser.uid;
+                            if(isHost) {
+                                window.fb.remove(window.fb.ref(window.fb.db, `groups/${groupId}`));
+                                window.fb.remove(window.fb.ref(window.fb.db, `messages/${groupId}`));
+                            } else {
+                                window.fb.remove(window.fb.ref(window.fb.db, `groups/${groupId}/members/${window.currentUser.uid}`));
+                            }
+                        }
+                    });
+                });
+                
+                document.getElementById('chat-room-list').innerHTML = '';
+                alert("모든 채팅방이 삭제되었습니다.");
+            },
+
+            forceDeleteCurrentChat: () => {
+                if(!app.currentChatId) return;
+                app.forceDelete(app.currentChatId, app.currentChatType);
+                app.closeChat();
+            },
+
+            openChat: (chatId, type, name) => {
                 app.currentChatId = chatId;
                 app.currentChatType = type;
                 document.getElementById('chat-room').classList.remove('translate-x-full');
                 
                 const titleEl = document.getElementById('chat-title');
-                if(type === 'group') {
-                    window.fb.get(window.fb.ref(window.fb.db, `groups/${chatId}`)).then(snap => {
-                        if(snap.exists()) titleEl.innerText = snap.val().name;
-                        else titleEl.innerText = "Deleted Group";
-                    });
+                if(name) titleEl.innerText = name;
+                else if(type === 'group') {
+                    window.fb.get(window.fb.ref(window.fb.db, `groups/${chatId}`)).then(s => titleEl.innerText = s.exists() ? s.val().name : "Deleted Group");
                 } else {
-                    titleEl.innerText = "Private Message";
+                    titleEl.innerText = "Private Chat";
                 }
 
                 const msgContainer = document.getElementById('chat-messages');
                 msgContainer.innerHTML = ''; 
 
                 const msgsRef = window.fb.ref(window.fb.db, `messages/${chatId}`);
-                
                 window.fb.onValue(msgsRef, (snap) => {
                     msgContainer.innerHTML = '';
                     const msgs = snap.val();
                     if(!msgs) {
-                        msgContainer.innerHTML = `<div class="text-center text-xs text-gray-500 mt-10">Start the conversation!</div>`;
+                        msgContainer.innerHTML = `<div class="text-center text-xs text-gray-500 mt-10">Start conversation!</div>`;
                         return;
                     }
-
                     Object.values(msgs).forEach(msg => {
                         const isMe = msg.uid === window.currentUser.uid;
                         const bubble = document.createElement('div');
@@ -389,57 +506,6 @@
             closeChat: () => {
                 document.getElementById('chat-room').classList.add('translate-x-full');
                 app.currentChatId = null;
-            },
-
-            // [NEW] 채팅방 삭제(나가기) 확인 및 실행
-            confirmLeaveChat: () => {
-                if(!app.currentChatId) return;
-                
-                if (app.currentChatType === 'group') {
-                    app.leaveGroup(app.currentChatId);
-                } else {
-                    // 개인 채팅 삭제 로직
-                    if (confirm("대화 내용을 모두 삭제하시겠습니까?")) {
-                        window.fb.remove(window.fb.ref(window.fb.db, `messages/${app.currentChatId}`));
-                        app.closeChat();
-                    }
-                }
-            },
-
-            // [NEW] 그룹 탈퇴 및 삭제 (관리자 권한 포함)
-            leaveGroup: (groupId) => {
-                window.fb.get(window.fb.ref(window.fb.db, `groups/${groupId}`)).then(snap => {
-                    if (!snap.exists()) {
-                        app.closeChat();
-                        return;
-                    }
-                    
-                    const group = snap.val();
-                    const isHost = group.host === window.currentUser.uid;
-                    
-                    if (isHost) {
-                        // 방장(관리자): 방 폭파
-                        if (confirm(`[관리자 권한] '${group.name}' 파티를 해체하시겠습니까?\n모든 멤버의 채팅방이 삭제됩니다.`)) {
-                            window.fb.remove(window.fb.ref(window.fb.db, `groups/${groupId}`));
-                            window.fb.remove(window.fb.ref(window.fb.db, `messages/${groupId}`));
-                            app.closeChat();
-                            alert("파티가 해체되었습니다.");
-                        }
-                    } else {
-                        // 일반 멤버: 나가기
-                        if (confirm("이 파티에서 나가시겠습니까?")) {
-                            window.fb.remove(window.fb.ref(window.fb.db, `groups/${groupId}/members/${window.currentUser.uid}`));
-                            // 멤버가 없으면 자동 삭제 체크
-                            window.fb.get(window.fb.ref(window.fb.db, `groups/${groupId}/members`)).then(mSnap => {
-                                if (!mSnap.exists()) {
-                                    window.fb.remove(window.fb.ref(window.fb.db, `groups/${groupId}`));
-                                    window.fb.remove(window.fb.ref(window.fb.db, `messages/${groupId}`));
-                                }
-                            });
-                            app.closeChat();
-                        }
-                    }
-                });
             },
 
             sendMessage: (e) => {
@@ -481,7 +547,7 @@
                                     <img src="${u.avatar}" class="w-10 h-10 rounded-full bg-gray-800">
                                     <span class="text-white text-sm font-bold">${u.name}</span>
                                 </div>
-                                <button onclick="app.startPrivateChat('${u.uid}')" class="bg-gray-800 p-2 rounded text-volt hover:bg-gray-700">
+                                <button onclick="app.startPrivateChat('${u.uid}', '${u.name}')" class="bg-gray-800 p-2 rounded text-volt hover:bg-gray-700">
                                     <i data-lucide="message-circle" class="w-4 h-4"></i>
                                 </button>
                             `;
@@ -493,10 +559,14 @@
                 });
             },
 
-            startPrivateChat: (targetUid) => {
+            startPrivateChat: (targetUid, targetName) => {
                 const chatId = [window.currentUser.uid, targetUid].sort().join('_');
+                window.fb.set(window.fb.ref(window.fb.db, `users/${window.currentUser.uid}/private_chats/${chatId}`), {
+                    name: targetName,
+                    startedAt: Date.now()
+                });
                 app.closeModals();
-                app.openChat(chatId, 'private');
+                app.openChat(chatId, 'private', targetName);
             },
 
             loadFeeds: () => {
