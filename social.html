@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>POKE RUN: SOCIAL HUB</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,700;1,900&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        volt: '#ccff00',
+                        dark: '#050505',
+                        panel: 'rgba(20, 20, 20, 0.95)',
+                    },
+                    fontFamily: {
+                        sport: ['Chakra Petch', 'sans-serif'],
+                        base: ['Noto Sans KR', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, update, onValue, push, get, child, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbHwLLXIH8rBQ8gNMVqE5SE2O8aibfFZO",
+            authDomain: "pokbattle.firebaseapp.com",
+            databaseURL: "https://pokbattle-default-rtdb.firebaseio.com",
+            projectId: "pokbattle",
+            storageBucket: "pokbattle.firebasestorage.app",
+            messagingSenderId: "445300582484",
+            appId: "1:445300582484:web:f8f1373a3bbf643face5c1",
+            measurementId: "G-PNXLYD0D0X"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        window.fb = { db, ref, set, update, onValue, push, get };
+        
+        window.initApp();
+    </script>
+
+    <style>
+        /* [iOS Fix] 아이폰 스크롤 튕김 방지 및 높이 설정 */
+        html, body {
+            margin: 0; padding: 0;
+            background-color: #050505;
+            color: white;
+            height: 100%;
+            overflow: hidden;
+            overscroll-behavior: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* 100dvh는 모바일 브라우저 주소창 고려한 높이 */
+        .h-ios { height: 100vh; height: 100dvh; }
+        
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .font-sport { font-family: 'Chakra Petch', sans-serif; }
+        
+        /* 메시지 애니메이션 */
+        @keyframes msg-pop { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+        .msg-anim { animation: msg-pop 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="flex justify-center w-full bg-black">
+
+    <div class="flex flex-col w-full max-w-md bg-dark shadow-2xl relative overflow-hidden h-ios pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+        
+        <header class="px-5 py-4 flex justify-between items-center bg-panel backdrop-blur-md border-b border-gray-800 z-30 shrink-0">
+            <div class="flex items-center gap-2">
+                <i data-lucide="zap" class="w-6 h-6 text-volt fill-current"></i>
+                <h1 class="text-xl font-sport font-black italic tracking-tighter text-white">POKE<span class="text-volt">RUN</span></h1>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="app.showModal('search')" class="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors">
+                    <i data-lucide="user-plus" class="w-5 h-5 text-gray-300"></i>
+                </button>
+                <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-volt to-green-500 p-[2px]">
+                    <img id="my-avatar" src="" class="w-full h-full rounded-full bg-black object-cover">
+                </div>
+            </div>
+        </header>
+
+        <main id="main-view" class="flex-1 relative overflow-y-auto scrollbar-hide pb-20 bg-dark">
+            
+            <div id="view-feed" class="view-section p-4 space-y-4">
+                <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-800">
+                    <div class="flex gap-3 mb-3">
+                        <div class="w-10 h-10 rounded-full bg-gray-700 overflow-hidden shrink-0">
+                            <img id="feed-avatar" src="" class="w-full h-full object-cover">
+                        </div>
+                        <input type="text" placeholder="Share your run..." class="w-full bg-transparent text-sm focus:outline-none text-white placeholder-gray-500">
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-gray-800">
+                        <button class="text-gray-400 hover:text-volt"><i data-lucide="image" class="w-5 h-5"></i></button>
+                        <button class="bg-volt text-black px-4 py-1.5 rounded-full text-xs font-bold font-sport">POST</button>
+                    </div>
+                </div>
+                <div class="space-y-4" id="feed-list"></div>
+            </div>
+
+            <div id="view-party" class="view-section hidden p-4">
+                <div class="flex justify-between items-end mb-6">
+                    <div>
+                        <h2 class="text-3xl font-sport font-black italic text-white leading-none">RUNNING<br><span class="text-volt">CREW</span></h2>
+                        <p class="text-xs text-gray-400 mt-2">Join a squad & Chat together!</p>
+                    </div>
+                    <button onclick="app.showModal('create-party')" class="bg-white text-black px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 hover:bg-volt transition-colors">
+                        <i data-lucide="plus" class="w-4 h-4"></i> NEW PARTY
+                    </button>
+                </div>
+                <div id="party-list" class="grid grid-cols-1 gap-3 pb-20"></div>
+            </div>
+
+            <div id="view-chat" class="view-section hidden p-4">
+                <h2 class="text-2xl font-sport font-black italic text-white mb-4">CHATS</h2>
+                <div id="chat-room-list" class="space-y-2 pb-20"></div>
+            </div>
+
+        </main>
+
+        <div id="chat-room" class="absolute inset-0 bg-dark z-50 flex flex-col transform translate-x-full transition-transform duration-300 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+            <div class="px-4 py-3 bg-gray-900 border-b border-gray-800 flex items-center justify-between shrink-0">
+                <button onclick="app.closeChat()" class="p-2 -ml-2 text-gray-400 hover:text-white"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
+                <div class="flex flex-col items-center">
+                    <h3 id="chat-title" class="font-bold text-white text-sm">Chat</h3>
+                    <span class="text-[10px] text-volt font-sport">LIVE</span>
+                </div>
+                <div class="w-8"></div>
+            </div>
+            
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-black/50">
+                </div>
+
+            <div class="p-3 bg-gray-900 border-t border-gray-800 shrink-0 mb-[env(safe-area-inset-bottom)]">
+                <form onsubmit="app.sendMessage(event)" class="flex gap-2">
+                    <input id="msg-input" type="text" class="flex-1 bg-black border border-gray-700 rounded-full px-4 py-3 text-sm text-white focus:border-volt focus:outline-none" placeholder="Message..." autocomplete="off">
+                    <button type="submit" class="bg-volt text-black p-3 rounded-full hover:bg-white transition-colors">
+                        <i data-lucide="send" class="w-5 h-5 ml-0.5"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div id="modal-create-party" class="absolute inset-0 bg-black/80 z-[60] hidden flex items-center justify-center p-6 backdrop-blur-sm">
+            <div class="bg-gray-900 border border-gray-700 w-full max-w-sm rounded-2xl p-6 relative">
+                <button onclick="app.closeModals()" class="absolute top-4 right-4 text-gray-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <h3 class="text-xl font-sport font-black italic text-white mb-6">NEW <span class="text-volt">PARTY</span></h3>
+                <div class="space-y-4">
+                    <input id="inp-party-name" type="text" placeholder="Party Name" class="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:border-volt focus:outline-none">
+                    <input id="inp-party-tag" type="text" placeholder="#Tag" class="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:border-volt focus:outline-none">
+                    <button onclick="app.createParty()" class="w-full bg-volt text-black font-bold py-3 rounded-lg mt-4">CREATE</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="modal-search" class="absolute inset-0 bg-black/80 z-[60] hidden flex items-center justify-center p-6 backdrop-blur-sm">
+            <div class="bg-gray-900 border border-gray-700 w-full max-w-sm rounded-2xl p-6 relative h-2/3 flex flex-col">
+                <button onclick="app.closeModals()" class="absolute top-4 right-4 text-gray-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <h3 class="text-xl font-sport font-black italic text-white mb-4">SEARCH</h3>
+                <div class="flex gap-2 mb-4">
+                    <input id="inp-search-user" type="text" placeholder="User Name..." class="flex-1 bg-black border border-gray-700 rounded-lg p-3 text-white text-sm">
+                    <button onclick="app.searchUser()" class="bg-gray-700 text-white px-4 rounded-lg"><i data-lucide="search" class="w-5 h-5"></i></button>
+                </div>
+                <div id="search-result" class="flex-1 overflow-y-auto space-y-2"></div>
+            </div>
+        </div>
+
+        <nav class="bg-panel backdrop-blur-md border-t border-gray-800 px-6 py-3 flex justify-between items-center absolute bottom-0 w-full z-40 pb-[calc(1.2rem+env(safe-area-inset-bottom))]">
+            <button onclick="app.nav('feed')" id="nav-feed" class="nav-btn flex flex-col items-center gap-1 text-volt">
+                <i data-lucide="home" class="w-6 h-6"></i><span class="text-[10px] font-bold">FEED</span>
+            </button>
+            <button onclick="app.nav('party')" id="nav-party" class="nav-btn flex flex-col items-center gap-1 text-gray-500">
+                <i data-lucide="users" class="w-6 h-6"></i><span class="text-[10px] font-bold">PARTY</span>
+            </button>
+            <button onclick="app.nav('chat')" id="nav-chat" class="nav-btn flex flex-col items-center gap-1 text-gray-500">
+                <i data-lucide="message-square" class="w-6 h-6"></i><span class="text-[10px] font-bold">CHAT</span>
+            </button>
+        </nav>
+
+    </div>
+
+    <script>
+        window.initApp = function() {
+            lucide.createIcons();
+            
+            // 로그인 정보 (없으면 임시 생성)
+            const storedName = localStorage.getItem('pokerun_name');
+            const storedAvatar = localStorage.getItem('pokerun_avatar');
+            
+            window.currentUser = {
+                uid: localStorage.getItem('pokerun_uid') || 'u_' + Date.now().toString(36),
+                name: storedName || 'Runner_' + Math.floor(Math.random()*999),
+                avatar: storedAvatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${Date.now()}`
+            };
+            
+            if(!localStorage.getItem('pokerun_uid')) {
+                localStorage.setItem('pokerun_uid', window.currentUser.uid);
+                window.fb.set(window.fb.ref(window.fb.db, 'users/' + window.currentUser.uid), window.currentUser);
+            }
+
+            document.getElementById('my-avatar').src = window.currentUser.avatar;
+            document.getElementById('feed-avatar').src = window.currentUser.avatar;
+
+            app.loadFeeds();
+            app.loadParties();
+            app.listenChats();
+        };
+
+        const app = {
+            currentChatId: null,
+            chatListener: null,
+
+            nav: (tab) => {
+                document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+                document.getElementById(`view-${tab}`).classList.remove('hidden');
+                
+                document.querySelectorAll('.nav-btn').forEach(el => {
+                    el.classList.remove('text-volt');
+                    el.classList.add('text-gray-500');
+                });
+                document.getElementById(`nav-${tab}`).classList.remove('text-gray-500');
+                document.getElementById(`nav-${tab}`).classList.add('text-volt');
+            },
+
+            showModal: (id) => document.getElementById(`modal-${id}`).classList.remove('hidden'),
+            closeModals: () => document.querySelectorAll('[id^="modal-"]').forEach(el => el.classList.add('hidden')),
+
+            // --- [PARTY: GROUP CHAT LOGIC] ---
+            loadParties: () => {
+                const partiesRef = window.fb.ref(window.fb.db, 'groups');
+                window.fb.onValue(partiesRef, (snapshot) => {
+                    const list = document.getElementById('party-list');
+                    list.innerHTML = '';
+                    const data = snapshot.val();
+                    if(!data) {
+                        list.innerHTML = `<div class="text-center text-gray-600 mt-10">No parties yet.</div>`;
+                        return;
+                    }
+
+                    Object.entries(data).forEach(([key, party]) => {
+                        const isMember = party.members && party.members[window.currentUser.uid];
+                        
+                        const el = document.createElement('div');
+                        el.className = "bg-gray-900 border border-gray-800 p-4 rounded-xl flex items-center justify-between";
+                        el.innerHTML = `
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center font-sport font-bold text-xl text-volt border border-gray-700">
+                                    ${party.name.substring(0,1).toUpperCase()}
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-white text-sm">${party.name}</h4>
+                                    <span class="text-[10px] text-gray-500 bg-black px-2 py-0.5 rounded border border-gray-800">${party.tag || '#Run'}</span>
+                                </div>
+                            </div>
+                            <button onclick="app.joinOrChatParty('${key}', ${isMember})" class="${isMember ? 'bg-gray-800 text-volt border border-volt/30' : 'bg-volt text-black'} px-4 py-2 rounded-lg font-bold text-xs transition-transform active:scale-95">
+                                ${isMember ? 'CHAT' : 'JOIN'}
+                            </button>
+                        `;
+                        list.appendChild(el);
+                    });
+                    lucide.createIcons();
+                });
+            },
+
+            createParty: () => {
+                const name = document.getElementById('inp-party-name').value;
+                const tag = document.getElementById('inp-party-tag').value;
+                if(!name) return alert("Enter party name");
+
+                const newRef = window.fb.push(window.fb.ref(window.fb.db, 'groups'));
+                const partyData = {
+                    name: name,
+                    tag: tag,
+                    host: window.currentUser.uid,
+                    members: { [window.currentUser.uid]: true },
+                    createdAt: Date.now()
+                };
+                window.fb.set(newRef, partyData);
+                app.closeModals();
+                app.nav('party');
+            },
+
+            joinOrChatParty: (groupId, isMember) => {
+                if(isMember) {
+                    app.openChat(groupId, 'group');
+                } else {
+                    if(confirm("Join this running crew?")) {
+                        const updates = {};
+                        updates[`groups/${groupId}/members/${window.currentUser.uid}`] = true;
+                        window.fb.update(window.fb.ref(window.fb.db), updates);
+                        // 가입 후 바로 채팅방 열기
+                        app.openChat(groupId, 'group');
+                    }
+                }
+            },
+
+            // --- [CHAT SYSTEM] ---
+            listenChats: () => {
+                // 내 채팅 목록 (그룹 + 개인)
+                const groupsRef = window.fb.ref(window.fb.db, 'groups');
+                window.fb.onValue(groupsRef, (snap) => {
+                    const list = document.getElementById('chat-room-list');
+                    list.innerHTML = '';
+                    const data = snap.val();
+                    if(!data) return;
+
+                    Object.entries(data).forEach(([key, group]) => {
+                        if(group.members && group.members[window.currentUser.uid]) {
+                            const div = document.createElement('div');
+                            div.className = "flex items-center gap-3 p-3 bg-gray-900 border border-gray-800 rounded-xl cursor-pointer active:bg-gray-800";
+                            div.onclick = () => app.openChat(key, 'group');
+                            div.innerHTML = `
+                                <div class="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center font-bold text-volt border border-gray-700">
+                                    ${group.name.substring(0,1)}
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-bold text-white text-sm">${group.name}</h4>
+                                    <p class="text-xs text-gray-500">Group Chat</p>
+                                </div>
+                                <i data-lucide="chevron-right" class="text-gray-600 w-4 h-4"></i>
+                            `;
+                            list.appendChild(div);
+                        }
+                    });
+                    lucide.createIcons();
+                });
+            },
+
+            openChat: (chatId, type) => {
+                app.currentChatId = chatId;
+                document.getElementById('chat-room').classList.remove('translate-x-full');
+                
+                // 타이틀 설정
+                const titleEl = document.getElementById('chat-title');
+                if(type === 'group') {
+                    window.fb.get(window.fb.ref(window.fb.db, `groups/${chatId}`)).then(snap => {
+                        if(snap.exists()) titleEl.innerText = snap.val().name;
+                    });
+                } else {
+                    titleEl.innerText = "Private Message";
+                }
+
+                const msgContainer = document.getElementById('chat-messages');
+                msgContainer.innerHTML = ''; 
+
+                const msgsRef = window.fb.ref(window.fb.db, `messages/${chatId}`);
+                
+                // 실시간 메시지 수신
+                window.fb.onValue(msgsRef, (snap) => {
+                    msgContainer.innerHTML = '';
+                    const msgs = snap.val();
+                    if(!msgs) {
+                        msgContainer.innerHTML = `<div class="text-center text-xs text-gray-500 mt-10">Start the conversation!</div>`;
+                        return;
+                    }
+
+                    Object.values(msgs).forEach(msg => {
+                        const isMe = msg.uid === window.currentUser.uid;
+                        const bubble = document.createElement('div');
+                        bubble.className = `flex gap-2 mb-3 msg-anim ${isMe ? 'flex-row-reverse' : ''}`;
+                        bubble.innerHTML = `
+                            ${!isMe ? `<img src="${msg.avatar}" class="w-8 h-8 rounded-full bg-gray-800 object-cover">` : ''}
+                            <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]">
+                                ${!isMe ? `<span class="text-[9px] text-gray-400 mb-1 ml-1">${msg.name}</span>` : ''}
+                                <div class="px-4 py-2 rounded-2xl text-sm break-all ${isMe ? 'bg-volt text-black rounded-tr-none font-medium' : 'bg-gray-800 text-white rounded-tl-none border border-gray-700'}">
+                                    ${msg.text}
+                                </div>
+                                <span class="text-[9px] text-gray-600 mt-1">${new Date(msg.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                            </div>
+                        `;
+                        msgContainer.appendChild(bubble);
+                    });
+                    msgContainer.scrollTop = msgContainer.scrollHeight;
+                });
+            },
+
+            closeChat: () => {
+                document.getElementById('chat-room').classList.add('translate-x-full');
+                app.currentChatId = null;
+            },
+
+            sendMessage: (e) => {
+                e.preventDefault();
+                if(!app.currentChatId) return;
+                const input = document.getElementById('msg-input');
+                const text = input.value.trim();
+                if(!text) return;
+
+                const newMsgRef = window.fb.push(window.fb.ref(window.fb.db, `messages/${app.currentChatId}`));
+                window.fb.set(newMsgRef, {
+                    text: text,
+                    uid: window.currentUser.uid,
+                    name: window.currentUser.name,
+                    avatar: window.currentUser.avatar,
+                    time: Date.now()
+                });
+                input.value = '';
+            },
+
+            searchUser: () => {
+                const query = document.getElementById('inp-search-user').value.toLowerCase();
+                if(!query) return;
+                
+                window.fb.get(window.fb.ref(window.fb.db, 'users')).then(snap => {
+                    const resDiv = document.getElementById('search-result');
+                    resDiv.innerHTML = '';
+                    const users = snap.val();
+                    if(!users) return;
+
+                    let found = false;
+                    Object.values(users).forEach(u => {
+                        if(u.name.toLowerCase().includes(query) && u.uid !== window.currentUser.uid) {
+                            found = true;
+                            const el = document.createElement('div');
+                            el.className = "flex items-center justify-between bg-black border border-gray-800 p-3 rounded-lg";
+                            el.innerHTML = `
+                                <div class="flex items-center gap-3">
+                                    <img src="${u.avatar}" class="w-10 h-10 rounded-full bg-gray-800">
+                                    <span class="text-white text-sm font-bold">${u.name}</span>
+                                </div>
+                                <button onclick="app.startPrivateChat('${u.uid}')" class="bg-gray-800 p-2 rounded text-volt hover:bg-gray-700">
+                                    <i data-lucide="message-circle" class="w-4 h-4"></i>
+                                </button>
+                            `;
+                            resDiv.appendChild(el);
+                        }
+                    });
+                    if(!found) resDiv.innerHTML = `<p class="text-center text-gray-500 text-xs mt-4">User not found.</p>`;
+                    lucide.createIcons();
+                });
+            },
+
+            startPrivateChat: (targetUid) => {
+                const chatId = [window.currentUser.uid, targetUid].sort().join('_');
+                app.closeModals();
+                app.openChat(chatId, 'private');
+            },
+
+            loadFeeds: () => {
+                const list = document.getElementById('feed-list');
+                const dummies = [
+                    { name: 'RedTrainer', time: '5m ago', content: 'Morning 5K Run! 🔥', img: 'https://images.unsplash.com/photo-1596727147705-56a9b9f6137d?auto=format&fit=crop&w=800' },
+                    { name: 'BlueRunner', time: '1h ago', content: 'New shoes, new record.', img: null },
+                ];
+                dummies.forEach(d => {
+                    const el = document.createElement('div');
+                    el.className = "bg-gray-900 border border-gray-800 rounded-xl p-4";
+                    el.innerHTML = `
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center font-bold text-white border border-gray-700">${d.name[0]}</div>
+                            <div>
+                                <h4 class="font-bold text-white text-sm">${d.name}</h4>
+                                <span class="text-xs text-gray-500">${d.time}</span>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-300 mb-3">${d.content}</p>
+                        ${d.img ? `<div class="rounded-lg overflow-hidden mb-3"><img src="${d.img}" class="w-full h-48 object-cover"></div>` : ''}
+                        <div class="flex gap-4 text-gray-500 text-xs">
+                            <button class="flex items-center gap-1 hover:text-volt"><i data-lucide="heart" class="w-4 h-4"></i> Like</button>
+                        </div>
+                    `;
+                    list.appendChild(el);
+                });
+                lucide.createIcons();
+            }
+        };
+    </script>
+</body>
+</html>
