@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>POKE RUN: Upgraded</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,700;1,900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --volt: #ccff00;
+            --bg-main: #000000;
+            --text-main: #ffffff;
+            --text-sub: #a1a1aa;
+            --border: #262626;
+            --nav-bg: rgba(0, 0, 0, 0.95);
+            --sheet-bg: #121212;
+            --input-bg: #1e1e1e;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: 'Noto Sans KR', sans-serif;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .font-sport { font-family: 'Chakra Petch', sans-serif; }
+        .text-volt { color: var(--volt); }
+        .border-volt { border-color: var(--volt); }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+        /* 뷰 전환 애니메이션 */
+        .view-section { display: none; height: 100%; }
+        .view-section.active { display: block; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* 모달 슬라이드 */
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .modal-enter { animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+
+        /* --- 댓글창 시트 스타일 --- */
+        #comment-backdrop {
+            transition: opacity 0.3s ease; opacity: 0; pointer-events: none;
+        }
+        #comment-backdrop.show { opacity: 1; pointer-events: auto; }
+
+        #comment-sheet {
+            background-color: var(--sheet-bg);
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+            z-index: 100;
+            box-shadow: 0 -5px 30px rgba(0,0,0,0.5);
+        }
+        #comment-sheet.open { transform: translateY(0); }
+        
+        .sheet-handle-bar {
+            width: 40px; height: 4px; background-color: #3f3f3f; border-radius: 2px; margin: 12px auto;
+        }
+
+        /* --- 러닝 기록 오버레이 (Feed) --- */
+        .run-stats-overlay {
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0) 100%);
+            padding-top: 60px;
+        }
+
+        /* --- 답글 스타일 --- */
+        .reply-item {
+            margin-left: 40px;
+            padding-left: 10px;
+            border-left: 2px solid #333;
+        }
+    </style>
+</head>
+<body class="flex justify-center h-[100dvh] w-full pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+
+    <div class="w-full max-w-md h-full flex flex-col relative bg-[var(--bg-main)] overflow-hidden border-x border-[var(--border)]">
+        
+        <header class="px-5 h-14 flex justify-between items-center bg-[var(--bg-main)]/95 backdrop-blur-md border-b border-[var(--border)] z-30 shrink-0 absolute top-0 w-full">
+            <div class="flex items-center gap-1.5 cursor-pointer" onclick="app.nav('home')">
+                <i data-lucide="zap" class="w-5 h-5 text-volt fill-current"></i>
+                <h1 class="text-xl font-sport font-black italic tracking-tighter">POKE<span class="text-volt">RUN</span></h1>
+            </div>
+            <div class="flex gap-5">
+                <i data-lucide="heart" class="w-6 h-6 hover:text-red-500 transition-colors cursor-pointer"></i>
+                <i data-lucide="send" class="w-6 h-6 hover:text-volt transition-colors cursor-pointer"></i>
+            </div>
+        </header>
+
+        <main id="main-content" class="flex-1 overflow-y-auto scrollbar-hide pt-14 pb-16 bg-[var(--bg-main)]">
+            
+            <div id="view-home" class="view-section active">
+                <div id="feed-container" class="pb-10 pt-2 space-y-8">
+                    </div>
+            </div>
+
+            <div id="view-reels" class="view-section flex flex-col items-center justify-center text-[var(--text-sub)]">
+                <i data-lucide="film" class="w-12 h-12 mb-4 opacity-50"></i>
+                <p>릴스 준비 중...</p>
+            </div>
+
+            <div id="view-upload" class="view-section"></div>
+
+            <div id="view-social" class="view-section flex flex-col items-center justify-center text-[var(--text-sub)]">
+                <i data-lucide="users" class="w-12 h-12 mb-4 opacity-50"></i>
+                <p>소셜 클럽 준비 중...</p>
+            </div>
+
+            <div id="view-profile" class="view-section px-5 pt-4">
+                <div class="flex items-center gap-4 mb-6">
+                    <img id="profile-img-lg" src="" class="w-20 h-20 rounded-full border border-[var(--border)]">
+                    <div>
+                        <h2 class="text-xl font-bold italic" id="profile-name"></h2>
+                        <p class="text-sm text-[var(--text-sub)]">Just Run. 🏃‍♂️</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center py-4 border-y border-[var(--border)]">
+                    <div><span class="block font-bold text-lg">124</span><span class="text-xs text-[var(--text-sub)]">Run</span></div>
+                    <div><span class="block font-bold text-lg">1.2k</span><span class="text-xs text-[var(--text-sub)]">Followers</span></div>
+                    <div><span class="block font-bold text-lg">890</span><span class="text-xs text-[var(--text-sub)]">KM</span></div>
+                </div>
+            </div>
+
+        </main>
+
+        <nav class="fixed bottom-0 w-full max-w-md bg-[var(--nav-bg)] backdrop-blur-md border-t border-[var(--border)] flex justify-around items-center h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] z-40">
+            <button onclick="app.nav('home')" class="nav-item active p-3 text-[var(--text-main)]"><i data-lucide="home" class="w-6 h-6"></i></button>
+            <button onclick="app.nav('reels')" class="nav-item p-3 text-[var(--text-sub)]"><i data-lucide="search" class="w-6 h-6"></i></button>
+            <button onclick="app.openUploadModal()" class="nav-item p-3 text-[var(--text-sub)] hover:text-volt transition-colors"><i data-lucide="plus-square" class="w-7 h-7"></i></button>
+            <button onclick="app.nav('social')" class="nav-item p-3 text-[var(--text-sub)]"><i data-lucide="heart" class="w-6 h-6"></i></button>
+            <button onclick="app.nav('profile')" class="nav-item p-3 text-[var(--text-sub)]">
+                <img id="nav-profile-img" src="" class="w-6 h-6 rounded-full border border-[var(--border)] bg-gray-800">
+            </button>
+        </nav>
+
+        <div id="modal-upload" class="absolute inset-0 bg-[var(--bg-main)] z-[60] hidden flex flex-col modal-enter h-full">
+            <div class="px-5 h-16 flex justify-between items-center border-b border-[var(--border)] pt-[env(safe-area-inset-top)] bg-[var(--bg-main)] shrink-0">
+                <button onclick="app.closeModal('modal-upload')" class="text-[var(--text-main)]"><i data-lucide="x" class="w-7 h-7"></i></button>
+                <h3 class="font-bold text-lg">새로운 기록</h3>
+                <button onclick="app.addPost()" class="text-volt font-bold text-base">공유</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-5 pb-24">
+                <label class="block w-full aspect-[4/5] bg-[#121212] border-2 border-dashed border-[var(--border)] rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-volt transition-colors relative overflow-hidden group mb-6">
+                    <img id="image-preview" src="" class="absolute inset-0 w-full h-full object-cover hidden">
+                    <div id="upload-placeholder" class="flex flex-col items-center text-[var(--text-sub)] group-hover:text-volt">
+                        <i data-lucide="camera" class="w-10 h-10 mb-3"></i>
+                        <span class="text-sm font-bold">사진 선택하기</span>
+                    </div>
+                    <input type="file" id="file-input" accept="image/*" class="hidden" onchange="app.handleFileSelect(this)">
+                </label>
+
+                <div class="mb-6">
+                    <div class="flex items-center gap-2 mb-3">
+                        <i data-lucide="activity" class="w-4 h-4 text-volt"></i>
+                        <h4 class="text-xs font-bold text-white uppercase">러닝 데이터</h4>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <input id="inp-dist" type="number" step="0.01" class="bg-[var(--input-bg)] rounded-xl p-3 text-center text-volt font-sport font-black text-xl focus:outline-none border border-[var(--border)] focus:border-volt" placeholder="0.00 KM">
+                        <input id="inp-time" type="text" class="bg-[var(--input-bg)] rounded-xl p-3 text-center text-white font-sport font-bold text-lg focus:outline-none border border-[var(--border)]" placeholder="00:00">
+                        <input id="inp-pace" type="text" class="bg-[var(--input-bg)] rounded-xl p-3 text-center text-white font-sport font-bold text-lg focus:outline-none border border-[var(--border)]" placeholder="0'00''">
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                    <img id="upload-avatar-preview" src="" class="w-10 h-10 rounded-full bg-gray-700 object-cover border border-[var(--border)]">
+                    <textarea id="post-input" placeholder="오늘의 러닝은 어땠나요?" class="flex-1 bg-transparent text-base focus:outline-none resize-none h-24 placeholder-[var(--text-sub)] leading-relaxed pt-2"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div id="comment-backdrop" class="absolute inset-0 bg-black/60 z-[80] hidden" onclick="app.closeComments()"></div>
+        <div id="comment-sheet" class="absolute bottom-0 w-full max-w-md h-[75vh] flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom)]">
+            
+            <div id="sheet-handle" class="bg-[var(--sheet-bg)] shrink-0 w-full pt-3 pb-2 cursor-grab active:cursor-grabbing border-b border-[var(--border)]">
+                <div class="sheet-handle-bar"></div>
+                <div class="text-center pb-2">
+                    <span class="font-bold text-sm">댓글</span>
+                </div>
+            </div>
+
+            <div id="comment-list" class="flex-1 overflow-y-auto p-5 space-y-0 bg-[var(--sheet-bg)]">
+                </div>
+
+            <div id="reply-indicator" class="hidden bg-[#222] px-4 py-2 flex justify-between items-center text-xs text-[var(--text-sub)] border-t border-[var(--border)]">
+                <span><span id="reply-target-name" class="text-volt font-bold"></span>님에게 답글 작성 중...</span>
+                <button onclick="app.cancelReply()" class="text-white"><i data-lucide="x" class="w-3 h-3"></i></button>
+            </div>
+
+            <div class="p-3 border-t border-[var(--border)] bg-[var(--sheet-bg)] flex items-center gap-3 shrink-0 mb-[env(safe-area-inset-bottom)]">
+                <img id="comment-my-avatar" src="" class="w-8 h-8 rounded-full bg-gray-700 object-cover border border-[var(--border)]">
+                <div class="flex-1 bg-[var(--input-bg)] rounded-full border border-[var(--border)] flex items-center px-4 py-2.5 focus-within:border-volt transition-colors">
+                    <input id="comment-input" type="text" placeholder="댓글 달기..." class="bg-transparent flex-1 text-sm focus:outline-none text-white placeholder-gray-500">
+                    <button onclick="app.addComment()" class="text-volt font-bold text-sm ml-2 shrink-0">게시</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const $ = (id) => document.getElementById(id);
+
+        const currentUser = {
+            name: "트레이너_01",
+            avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Felix"
+        };
+
+        // 데이터 구조: id와 parentId를 통해 대댓글 구조 지원
+        let posts = [
+            { 
+                id: 1, 
+                name: "레드_트레이너", 
+                avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Red", 
+                time: "5분 전", 
+                content: "오늘 날씨 최고! 페이스 유지 성공 🔥\n다들 좋은 아침입니다!", 
+                image: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=800&q=80", 
+                likes: 24,
+                liked: false,
+                stats: { dist: "5.02", time: "24:10", pace: "4'48\"" },
+                comments: [
+                    { id: 101, parentId: null, user: "피카_피카", text: "와 페이스 엄청 좋으시네요!", avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Pika", time: "3분 전" },
+                    { id: 102, parentId: 101, user: "레드_트레이너", text: "감사합니다! 신발 덕분인 것 같아요 ㅎㅎ", avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Red", time: "1분 전" }
+                ]
+            },
+            { 
+                id: 2, 
+                name: "블루_러너", 
+                avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Blue", 
+                time: "1시간 전", 
+                content: "가볍게 3k 뛰고 왔습니다. 🏃‍♂️", 
+                image: null, 
+                likes: 8,
+                liked: false,
+                stats: { dist: "3.20", time: "20:05", pace: "6'15\"" },
+                comments: []
+            }
+        ];
+
+        let selectedImage = null;
+        let currentPostId = null;
+        let replyTargetId = null; // 답글 대상 댓글 ID
+
+        const app = {
+            init: () => {
+                lucide.createIcons();
+                app.renderFeed();
+                app.renderUserInfo();
+                app.initSwipeGesture();
+            },
+
+            renderUserInfo: () => {
+                $('nav-profile-img').src = currentUser.avatar;
+                $('profile-img-lg').src = currentUser.avatar;
+                $('profile-name').innerText = currentUser.name;
+                $('upload-avatar-preview').src = currentUser.avatar;
+                $('comment-my-avatar').src = currentUser.avatar;
+            },
+
+            nav: (tabId) => {
+                document.querySelectorAll('.nav-item').forEach(el => {
+                    el.classList.remove('active');
+                    el.style.color = 'var(--text-sub)';
+                });
+                const targetBtn = document.querySelector(`button[onclick="app.nav('${tabId}')"]`);
+                if(targetBtn) {
+                    targetBtn.classList.add('active');
+                    targetBtn.style.color = 'var(--text-main)';
+                }
+                
+                document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+                const view = $( `view-${tabId}` );
+                if(view) view.classList.add('active');
+            },
+
+            // --- 업로드 관련 ---
+            openUploadModal: () => { $('modal-upload').classList.remove('hidden'); },
+            closeModal: (id) => { $(id).classList.add('hidden'); },
+            
+            handleFileSelect: (input) => {
+                if (input.files && input.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        selectedImage = e.target.result;
+                        $('image-preview').src = selectedImage;
+                        $('image-preview').classList.remove('hidden');
+                        $('upload-placeholder').classList.add('hidden');
+                    };
+                    reader.readAsDataURL(input.files[0]);
+                }
+            },
+
+            addPost: () => {
+                const content = $('post-input').value.trim();
+                const dist = $('inp-dist').value;
+                const time = $('inp-time').value;
+                const pace = $('inp-pace').value;
+
+                if (!content && !selectedImage && !dist) return alert("기록이나 내용을 입력해주세요.");
+
+                const newPost = {
+                    id: Date.now(),
+                    name: currentUser.name,
+                    avatar: currentUser.avatar,
+                    time: "방금 전",
+                    content: content,
+                    image: selectedImage,
+                    likes: 0,
+                    liked: false,
+                    stats: (dist || time) ? { dist: dist||"-", time: time||"-", pace: pace||"-" } : null,
+                    comments: []
+                };
+                
+                posts.unshift(newPost);
+                app.renderFeed();
+                
+                // Reset
+                $('post-input').value = '';
+                $('inp-dist').value = '';
+                $('inp-time').value = '';
+                $('inp-pace').value = '';
+                selectedImage = null;
+                $('image-preview').classList.add('hidden');
+                $('upload-placeholder').classList.remove('hidden');
+                app.closeModal('modal-upload');
+                app.nav('home');
+            },
+
+            toggleLike: (id) => {
+                const post = posts.find(p => p.id === id);
+                if (post) {
+                    post.liked = !post.liked;
+                    post.likes += post.liked ? 1 : -1;
+                    app.renderFeed(); 
+                }
+            },
+
+            // --- 댓글 기능 (핵심) ---
+            openComments: (id) => {
+                currentPostId = id;
+                app.renderComments(id);
+                $('comment-backdrop').classList.add('show');
+                $('comment-sheet').classList.add('open');
+                app.cancelReply(); // 답글 상태 초기화
+            },
+
+            closeComments: () => {
+                const sheet = $('comment-sheet');
+                sheet.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1)';
+                sheet.classList.remove('open');
+                $('comment-backdrop').classList.remove('show');
+                setTimeout(() => { sheet.style.transform = ''; }, 300);
+            },
+
+            renderComments: (postId) => {
+                const post = posts.find(p => p.id === postId);
+                const list = $('comment-list');
+                list.innerHTML = '';
+
+                if (!post || post.comments.length === 0) {
+                    list.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-40 text-[var(--text-sub)]">
+                            <p class="text-sm font-medium">아직 댓글이 없습니다.</p>
+                        </div>`;
+                    return;
+                }
+
+                // 댓글을 렌더링 할 때, 부모 댓글 먼저 -> 그 뒤에 자식 댓글(대댓글) 순서로 정렬
+                const rootComments = post.comments.filter(c => !c.parentId);
+                
+                rootComments.forEach(root => {
+                    app.appendCommentHTML(list, root, false);
+                    
+                    // 대댓글 찾기
+                    const replies = post.comments.filter(c => c.parentId === root.id);
+                    replies.forEach(reply => {
+                        app.appendCommentHTML(list, reply, true);
+                    });
+                });
+                lucide.createIcons();
+            },
+
+            appendCommentHTML: (container, comment, isReply) => {
+                const replyClass = isReply ? "reply-item" : "border-b border-[var(--border)] pb-4 mb-4";
+                const bgClass = isReply ? "bg-[#1a1a1a] rounded-lg p-3 mb-2" : "";
+                
+                const html = `
+                    <div class="flex gap-3 items-start ${replyClass} ${bgClass} animate-fade-in relative group">
+                        <img src="${comment.avatar}" class="w-8 h-8 rounded-full bg-gray-800 object-cover shrink-0 border border-[var(--border)]">
+                        <div class="flex-1">
+                            <div class="flex justify-between items-start">
+                                <p class="text-sm leading-snug">
+                                    <span class="font-bold mr-1.5 text-white">${comment.user}</span>
+                                    <span class="text-gray-300 font-light text-[13px]">${comment.text}</span>
+                                </p>
+                                <i data-lucide="heart" class="w-3.5 h-3.5 text-[#555] mt-1 ml-2"></i>
+                            </div>
+                            <div class="flex gap-3 mt-1.5 text-[11px] text-[var(--text-sub)] font-medium">
+                                <span>${comment.time || '방금'}</span>
+                                ${!isReply ? `<button onclick="app.setReplyMode(${comment.id}, '${comment.user}')" class="hover:text-volt transition-colors">답글 달기</button>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+            },
+
+            // 답글 모드 설정
+            setReplyMode: (commentId, userName) => {
+                replyTargetId = commentId;
+                $('reply-target-name').innerText = userName;
+                $('reply-indicator').classList.remove('hidden');
+                $('comment-input').focus();
+                $('comment-input').placeholder = "답글을 입력하세요...";
+            },
+
+            cancelReply: () => {
+                replyTargetId = null;
+                $('reply-indicator').classList.add('hidden');
+                $('comment-input').placeholder = "댓글 달기...";
+            },
+
+            addComment: () => {
+                const input = $('comment-input');
+                const text = input.value.trim();
+                if (!text || !currentPostId) return;
+
+                const post = posts.find(p => p.id === currentPostId);
+                
+                const newComment = { 
+                    id: Date.now(),
+                    parentId: replyTargetId, // null이면 일반 댓글, 값이 있으면 대댓글
+                    user: currentUser.name, 
+                    text: text, 
+                    avatar: currentUser.avatar,
+                    time: "방금"
+                };
+
+                post.comments.push(newComment);
+                
+                input.value = '';
+                app.cancelReply(); // 답글 모드 해제
+                app.renderComments(currentPostId);
+                app.renderFeed(); // 댓글 수 갱신을 위해 피드도 리렌더링
+            },
+
+            // --- 제스처 (Swipe Down to Close) ---
+            initSwipeGesture: () => {
+                const sheet = $('comment-sheet');
+                const handle = $('sheet-handle');
+                let startY = 0;
+                let currentY = 0;
+                let isDragging = false;
+
+                handle.addEventListener('touchstart', (e) => {
+                    startY = e.touches[0].clientY;
+                    isDragging = true;
+                    sheet.style.transition = 'none';
+                });
+
+                window.addEventListener('touchmove', (e) => {
+                    if (!isDragging) return;
+                    const touchY = e.touches[0].clientY;
+                    const diff = touchY - startY;
+                    
+                    // 아래로 드래그 할 때만 이동
+                    if (diff > 0) { 
+                        e.preventDefault(); 
+                        currentY = diff;
+                        sheet.style.transform = `translateY(${currentY}px)`;
+                    }
+                }, { passive: false });
+
+                window.addEventListener('touchend', () => {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    sheet.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1)';
+                    
+                    if (currentY > 120) { // 120px 이상 내리면 닫기
+                        app.closeComments();
+                    } else {
+                        sheet.style.transform = `translateY(0)`;
+                    }
+                    currentY = 0;
+                });
+            },
+
+            renderFeed: () => {
+                const container = $('feed-container');
+                container.innerHTML = '';
+                
+                posts.forEach(post => {
+                    // 러닝 데이터 (사진 유무에 따라 스타일 분기)
+                    let statsHTML = '';
+                    if (post.stats) {
+                        if (post.image) {
+                            // [세련된 오버레이 스타일] - Login Peed Chat 스타일 적용
+                            statsHTML = `
+                                <div class="absolute bottom-0 left-0 w-full run-stats-overlay px-5 pb-4">
+                                    <div class="flex justify-between items-end">
+                                        <div>
+                                            <div class="flex items-baseline gap-1 mb-0.5">
+                                                <span class="text-4xl font-sport font-black text-volt italic tracking-tighter drop-shadow-md">${post.stats.dist}</span>
+                                                <span class="text-sm font-bold text-white mb-1 drop-shadow-md ml-1">KM</span>
+                                            </div>
+                                            <div class="flex gap-3 text-white text-xs font-bold tracking-wide opacity-90">
+                                                <div class="flex items-center gap-1"><i data-lucide="timer" class="w-3 h-3"></i> ${post.stats.time}</div>
+                                                <span class="opacity-50">|</span>
+                                                <div class="flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3 text-volt"></i> ${post.stats.pace} /km</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            // 이미지가 없을 때 깔끔한 박스 스타일
+                            statsHTML = `
+                                <div class="bg-[#121212] border border-[var(--border)] rounded-xl p-4 mb-4 flex justify-around items-center">
+                                    <div class="text-center">
+                                        <span class="block text-[10px] text-[var(--text-sub)] font-bold mb-1">거리</span>
+                                        <span class="block font-sport font-black text-2xl text-volt">${post.stats.dist} <span class="text-xs text-white">KM</span></span>
+                                    </div>
+                                    <div class="w-[1px] h-8 bg-[var(--border)]"></div>
+                                    <div class="text-center">
+                                        <span class="block text-[10px] text-[var(--text-sub)] font-bold mb-1">시간</span>
+                                        <span class="block font-sport font-bold text-lg">${post.stats.time}</span>
+                                    </div>
+                                    <div class="w-[1px] h-8 bg-[var(--border)]"></div>
+                                    <div class="text-center">
+                                        <span class="block text-[10px] text-[var(--text-sub)] font-bold mb-1">페이스</span>
+                                        <span class="block font-sport font-bold text-lg">${post.stats.pace}</span>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+
+                    const likeColor = post.liked ? "text-red-500 fill-red-500" : "text-white hover:text-[var(--text-sub)]";
+
+                    const html = `
+                        <article class="mb-8 border-b border-[var(--border)] pb-6 last:border-0">
+                            <div class="flex items-center justify-between px-5 mb-3">
+                                <div class="flex items-center gap-2.5">
+                                    <img src="${post.avatar}" class="w-9 h-9 rounded-full border border-[var(--border)] object-cover bg-gray-800">
+                                    <div>
+                                        <span class="font-bold text-sm block leading-none mb-0.5">${post.name}</span>
+                                        <span class="text-[11px] text-[var(--text-sub)] font-medium">${post.time}</span>
+                                    </div>
+                                </div>
+                                <button><i data-lucide="more-horizontal" class="w-5 h-5 text-[var(--text-main)]"></i></button>
+                            </div>
+                            
+                            ${post.image ? `
+                                <div class="w-full relative mb-3 bg-[#121212]">
+                                    <img src="${post.image}" class="w-full h-auto aspect-square object-cover block">
+                                    ${statsHTML}
+                                </div>
+                            ` : `<div class="px-5">${statsHTML}</div>`}
+
+                            <div class="flex items-center justify-between px-5 mb-3">
+                                <div class="flex gap-5">
+                                    <button onclick="app.toggleLike(${post.id})">
+                                        <i data-lucide="heart" class="w-7 h-7 transition-transform active:scale-110 ${likeColor}"></i>
+                                    </button>
+                                    <button onclick="app.openComments(${post.id})">
+                                        <i data-lucide="message-circle" class="w-7 h-7 text-white -rotate-90 hover:text-[var(--text-sub)] transition-colors"></i>
+                                    </button>
+                                    <button>
+                                        <i data-lucide="send" class="w-7 h-7 text-white hover:text-[var(--text-sub)] transition-colors"></i>
+                                    </button>
+                                </div>
+                                <button><i data-lucide="bookmark" class="w-7 h-7 text-white hover:text-[var(--text-sub)] transition-colors"></i></button>
+                            </div>
+
+                            <div class="px-5">
+                                <p class="text-sm font-bold mb-2">좋아요 ${post.likes}개</p>
+                                <div class="text-sm leading-relaxed mb-2">
+                                    <span class="font-bold mr-1.5">${post.name}</span>
+                                    <span class="font-light text-gray-200 whitespace-pre-line">${post.content}</span>
+                                </div>
+                                <button onclick="app.openComments(${post.id})" class="text-xs text-[var(--text-sub)] font-medium py-1">
+                                    댓글 ${post.comments.length}개 모두 보기
+                                </button>
+                            </div>
+                        </article>
+                    `;
+                    container.insertAdjacentHTML('beforeend', html);
+                });
+                lucide.createIcons();
+            }
+        };
+
+        app.init();
+    </script>
+</body>
+</html>
