@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>POKE RUN: UPLOAD</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root { --volt: #ccff00; --bg-main: #000000; --bg-card: #111111; --text-main: #ffffff; --border-color: #262626; }
+        body { font-family: sans-serif; background: var(--bg-main); color: var(--text-main); }
+    </style>
+</head>
+<body class="flex justify-center h-screen bg-[var(--bg-main)]">
+    <div class="w-full max-w-md h-full relative bg-[var(--bg-main)] flex flex-col">
+        <header class="p-4 border-b border-[var(--border-color)]"><h1 class="text-xl font-bold">기록 공유하기</h1></header>
+        
+        <div class="p-4 flex-1 overflow-y-auto">
+            <div class="relative w-full aspect-square bg-[var(--bg-card)] rounded-xl border-2 border-dashed border-[var(--border-color)] flex flex-col items-center justify-center mb-6 cursor-pointer overflow-hidden group">
+                <input type="file" id="upload-file-input" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 z-10" onchange="previewImage(this)">
+                <div id="upload-placeholder" class="flex flex-col items-center"><i data-lucide="camera" class="w-10 h-10 mb-2"></i><span>사진 선택</span></div>
+                <img id="upload-preview" class="absolute inset-0 w-full h-full object-cover hidden">
+            </div>
+            
+            <div class="grid grid-cols-3 gap-3 mb-4">
+                <div class="bg-[var(--bg-card)] p-3 rounded-xl border border-[var(--border-color)] flex flex-col items-center">
+                    <i data-lucide="timer" class="w-5 h-5 text-[var(--volt)] mb-1"></i>
+                    <input type="text" id="upload-time" placeholder="00:00" class="bg-transparent text-center w-full text-white font-bold outline-none">
+                </div>
+                <div class="bg-[var(--bg-card)] p-3 rounded-xl border border-[var(--border-color)] flex flex-col items-center">
+                    <i data-lucide="map-pin" class="w-5 h-5 text-blue-400 mb-1"></i>
+                    <input type="text" id="upload-dist" placeholder="0.0" class="bg-transparent text-center w-full text-white font-bold outline-none">
+                </div>
+                <div class="bg-[var(--bg-card)] p-3 rounded-xl border border-[var(--border-color)] flex flex-col items-center">
+                    <i data-lucide="flame" class="w-5 h-5 text-orange-500 mb-1"></i>
+                    <input type="text" id="upload-cal" placeholder="0" class="bg-transparent text-center w-full text-white font-bold outline-none">
+                </div>
+            </div>
+            
+            <textarea id="upload-content" class="w-full bg-[var(--bg-card)] p-4 rounded-xl text-white outline-none h-32 border border-[var(--border-color)]" placeholder="오늘 러닝은 어떠셨나요?"></textarea>
+            <button onclick="handleUpload()" class="w-full bg-[var(--volt)] text-black font-bold py-3.5 mt-6 rounded-xl">업로드</button>
+        </div>
+
+        <nav class="w-full bg-[var(--bg-main)] border-t border-[var(--border-color)] px-2 py-4 flex justify-between items-end pb-8">
+            <button onclick="location.href='log.html'" class="flex-1 flex flex-col items-center gap-1 text-[#9ca3af]"><i data-lucide="home" class="w-6 h-6"></i><span class="text-[10px]">피드</span></button>
+            <button onclick="location.href='reels.html'" class="flex-1 flex flex-col items-center gap-1 text-[#9ca3af]"><i data-lucide="clapperboard" class="w-6 h-6"></i><span class="text-[10px]">릴스</span></button>
+            <div class="relative w-16 flex justify-center"><div class="absolute bottom-2 bg-[var(--volt)] text-black p-3.5 rounded-full border-4 border-[var(--bg-main)]"><i data-lucide="plus" class="w-7 h-7"></i></div></div>
+            <button onclick="location.href='profile.html'" class="flex-1 flex flex-col items-center gap-1 text-[#9ca3af]"><i data-lucide="user" class="w-6 h-6"></i><span class="text-[10px]">프로필</span></button>
+            <button onclick="location.href='settings.html'" class="flex-1 flex flex-col items-center gap-1 text-[#9ca3af]"><i data-lucide="settings" class="w-6 h-6"></i><span class="text-[10px]">설정</span></button>
+        </nav>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        
+        const app = initializeApp({ apiKey: "AIzaSyAbHwLLXIH8rBQ8gNMVqE5SE208aIbfFZ0", authDomain: "pokbattle.firebaseapp.com", databaseURL: "https://pokbattle-default-rtdb.firebaseio.com", projectId: "pokbattle", storageBucket: "pokbattle.firebasestorage.app", messagingSenderId: "445300582484", appId: "1:445300582484:web:f8f1373a3bbf643face5c1" });
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        window.previewImage = (input) => {
+            if(input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('upload-preview').src = e.target.result;
+                    document.getElementById('upload-preview').classList.remove('hidden');
+                    document.getElementById('upload-placeholder').classList.add('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        };
+
+        window.handleUpload = () => {
+            const user = auth.currentUser;
+            if(!user) return alert("로그인이 필요합니다.");
+            
+            const fileInput = document.getElementById('upload-file-input');
+            const content = document.getElementById('upload-content').value;
+            const stats = {
+                time: document.getElementById('upload-time').value,
+                dist: document.getElementById('upload-dist').value,
+                cal: document.getElementById('upload-cal').value
+            };
+            
+            if(!fileInput.files[0]) return alert("사진을 선택해주세요.");
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const newPostRef = push(ref(db, 'posts'));
+                set(newPostRef, {
+                    author: user.uid,
+                    authorName: user.displayName,
+                    authorAvatar: user.photoURL || "",
+                    content: content,
+                    stats: stats,
+                    image: e.target.result, // 실제 앱에서는 Storage 사용 권장
+                    timestamp: Date.now()
+                }).then(() => {
+                    alert("업로드 완료!");
+                    location.href = "home.html";
+                });
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+        };
+        lucide.createIcons();
+    </script>
+</body>
+</html>

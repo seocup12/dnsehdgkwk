@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>POKE RUN: HOME</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,700;1,900&family=Inter:wght@400;700;900&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- 공통 테마 설정 --- */
+        :root {
+            --volt: #ccff00;
+            --bg-main: #000000;
+            --bg-card: #111111;
+            --bg-sub: #262626;
+            --text-main: #ffffff;
+            --text-sub: #9ca3af;
+            --border-color: #262626;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            overflow: hidden; /* 앱 같은 느낌을 위해 스크롤 제어 */
+        }
+
+        .font-sport { font-family: 'Chakra Petch', sans-serif; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+        /* 하트 애니메이션 */
+        @keyframes heart-pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+        .animate-heart { animation: heart-pop 0.3s ease-in-out; }
+
+        /* 댓글 시트 (Bottom Sheet) 스타일 */
+        .bottom-sheet-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 50;
+            visibility: hidden; opacity: 0; transition: all 0.3s ease;
+            display: flex; align-items: flex-end; justify-content: center;
+        }
+        .bottom-sheet-overlay.open { visibility: visible; opacity: 1; }
+        
+        .bottom-sheet {
+            background: var(--bg-card); width: 100%; max-width: 450px; height: 70vh;
+            border-top-left-radius: 24px; border-top-right-radius: 24px;
+            transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            display: flex; flex-direction: column;
+        }
+        .bottom-sheet-overlay.open .bottom-sheet { transform: translateY(0); }
+        
+        .sheet-handle {
+            width: 40px; height: 4px; background: var(--bg-sub);
+            border-radius: 2px; margin: 12px auto;
+        }
+
+        .input-dark {
+            width: 100%; background: var(--bg-sub); border: none;
+            color: var(--text-main); padding: 12px 16px; border-radius: 20px;
+            outline: none; font-size: 14px;
+        }
+    </style>
+</head>
+<body class="flex justify-center h-screen w-full bg-[var(--bg-main)]">
+
+    <div class="w-full max-w-md h-full relative flex flex-col bg-[var(--bg-main)] shadow-2xl overflow-hidden">
+        
+        <header class="px-5 py-4 flex justify-between items-center bg-[var(--bg-main)]/90 backdrop-blur-sm z-20 border-b border-[var(--border-color)]">
+            <h1 class="text-2xl font-black italic tracking-tighter text-[var(--text-main)] font-sport">
+                POKE<span class="text-[var(--volt)]">RUN</span>
+            </h1>
+            <div class="flex gap-4">
+                <button><i data-lucide="heart" class="w-6 h-6 text-[var(--text-main)]"></i></button>
+                <button onclick="location.href='message.html'">
+                    <i data-lucide="send" class="w-6 h-6 text-[var(--text-main)] transform -rotate-45 mb-1"></i>
+                </button>
+            </div>
+        </header>
+
+        <main id="feed-container" class="flex-1 overflow-y-auto scrollbar-hide pb-20 pt-2">
+            <div class="text-center text-[var(--text-sub)] py-20 flex flex-col items-center">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--volt)] mb-4"></div>
+                <p>피드를 불러오는 중...</p>
+            </div>
+        </main>
+
+        <nav class="w-full bg-[var(--bg-main)] border-t border-[var(--border-color)] px-2 py-3 pb-8 flex justify-between items-end z-30">
+            <button onclick="location.reload()" class="flex-1 flex flex-col items-center gap-1 text-[var(--volt)]">
+                <i data-lucide="home" class="w-6 h-6"></i>
+                <span class="text-[10px] font-bold">피드</span>
+            </button>
+            <button onclick="location.href='reels.html'" class="flex-1 flex flex-col items-center gap-1 text-[var(--text-sub)] hover:text-white transition">
+                <i data-lucide="clapperboard" class="w-6 h-6"></i>
+                <span class="text-[10px] font-bold">릴스</span>
+            </button>
+            
+            <div class="relative w-16 flex justify-center -mt-8">
+                <button onclick="location.href='upload.html'" class="absolute bottom-0 bg-[var(--volt)] text-black p-4 rounded-full border-4 border-[var(--bg-main)] shadow-lg active:scale-95 transition-transform">
+                    <i data-lucide="plus" class="w-7 h-7"></i>
+                </button>
+            </div>
+
+            <button onclick="location.href='profile.html'" class="flex-1 flex flex-col items-center gap-1 text-[var(--text-sub)] hover:text-white transition">
+                <i data-lucide="user" class="w-6 h-6"></i>
+                <span class="text-[10px] font-bold">프로필</span>
+            </button>
+            <button onclick="location.href='settings.html'" class="flex-1 flex flex-col items-center gap-1 text-[var(--text-sub)] hover:text-white transition">
+                <i data-lucide="settings" class="w-6 h-6"></i>
+                <span class="text-[10px] font-bold">설정</span>
+            </button>
+        </nav>
+
+        <div id="sheet-reply" class="bottom-sheet-overlay" onclick="closeReplySheet(event)">
+            <div class="bottom-sheet shadow-2xl">
+                <div class="sheet-handle"></div>
+                <div class="px-5 pb-3 border-b border-[var(--border-color)] text-center font-bold text-sm">
+                    댓글 <span id="reply-count-header" class="text-[var(--volt)]">0</span>
+                </div>
+                
+                <div id="reply-list" class="flex-1 overflow-y-auto p-4 space-y-4">
+                    </div>
+
+                <div class="p-4 border-t border-[var(--border-color)] bg-[var(--bg-card)] pb-8">
+                    <div class="flex items-center gap-3">
+                        <img id="my-avatar-input" class="w-8 h-8 rounded-full bg-gray-700 object-cover">
+                        <div class="flex-1 relative">
+                            <input type="text" id="reply-input" class="input-dark pr-12" placeholder="댓글 달기...">
+                            <button onclick="addReply()" class="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--volt)] font-bold text-sm px-2 py-1">게시</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, onValue, push, update, remove, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Firebase 설정 (이전과 동일)
+        const firebaseConfig = { 
+            apiKey: "AIzaSyAbHwLLXIH8rBQ8gNMVqE5SE208aIbfFZ0", 
+            authDomain: "pokbattle.firebaseapp.com", 
+            databaseURL: "https://pokbattle-default-rtdb.firebaseio.com", 
+            projectId: "pokbattle", 
+            storageBucket: "pokbattle.firebasestorage.app", 
+            messagingSenderId: "445300582484", 
+            appId: "1:445300582484:web:f8f1373a3bbf643face5c1" 
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        let currentUser = null;
+        let currentPostId = null;
+
+        // 1. 인증 상태 확인
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('my-avatar-input').src = user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`;
+                loadFeed(); // 로그인 되면 피드 로드
+            } else {
+                // [수정됨] 로그인 안 된 경우 로그인 페이지(home.html)로 이동
+                alert("로그인이 필요합니다.");
+                location.href = 'home.html';
+            }
+        });
+
+        // 2. 피드 불러오기 (실시간)
+        function loadFeed() {
+            const feedContainer = document.getElementById('feed-container');
+            const postsRef = ref(db, 'posts');
+
+            onValue(postsRef, (snapshot) => {
+                feedContainer.innerHTML = ""; // 초기화
+                const data = snapshot.val();
+                
+                if (!data) {
+                    feedContainer.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full text-[var(--text-sub)]">
+                            <i data-lucide="camera-off" class="w-12 h-12 mb-3 opacity-50"></i>
+                            <p>아직 게시물이 없습니다.</p>
+                            <button onclick="location.href='upload.html'" class="mt-4 text-[var(--volt)] font-bold text-sm">첫 게시물 올리기</button>
+                        </div>`;
+                    lucide.createIcons();
+                    return;
+                }
+
+                // 최신순 정렬 (reverse)
+                const posts = Object.entries(data).reverse();
+
+                posts.forEach(([key, post]) => {
+                    const likeCount = post.likes ? Object.keys(post.likes).length : 0;
+                    const commentCount = post.comments ? Object.keys(post.comments).length : 0;
+                    const isLiked = post.likes && currentUser && post.likes[currentUser.uid];
+                    
+                    // 좋아요 아이콘 스타일
+                    const heartClass = isLiked ? "fill-[var(--volt)] text-[var(--volt)]" : "text-white";
+                    
+                    const html = `
+                        <article class="border-b border-[var(--border-color)] pb-4 mb-4">
+                            <div class="px-4 py-3 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 rounded-full bg-gray-800 overflow-hidden border border-[var(--border-color)]">
+                                        <img src="${post.authorAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + post.author}" class="w-full h-full object-cover">
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-sm text-white leading-none mb-1">${post.authorName}</p>
+                                        <p class="text-xs text-gray-500">${new Date(post.timestamp).toLocaleDateString()}</p>
+                                    </div>
+                                </div>
+                                <button class="text-gray-500"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>
+                            </div>
+
+                            <div class="w-full bg-[#050505] aspect-square flex items-center justify-center overflow-hidden relative" ondblclick="toggleLike('${key}')">
+                                <img src="${post.image}" class="w-full h-full object-cover">
+                                <i id="heart-anim-${key}" data-lucide="heart" class="w-24 h-24 text-[var(--volt)] fill-[var(--volt)] absolute opacity-0 transition-opacity duration-300 transform scale-0"></i>
+                            </div>
+
+                            <div class="px-4 pt-3 flex justify-between items-center">
+                                <div class="flex gap-5">
+                                    <button onclick="toggleLike('${key}')" class="transition-transform active:scale-90">
+                                        <i data-lucide="heart" class="w-7 h-7 ${heartClass} transition-colors duration-200"></i>
+                                    </button>
+                                    <button onclick="openReplySheet('${key}')">
+                                        <i data-lucide="message-circle" class="w-7 h-7 text-white hover:text-gray-300"></i>
+                                    </button>
+                                    <button>
+                                        <i data-lucide="send" class="w-7 h-7 text-white hover:text-gray-300 transform -rotate-45 mb-1 ml-1"></i>
+                                    </button>
+                                </div>
+                                <button class="text-white"><i data-lucide="bookmark" class="w-7 h-7"></i></button>
+                            </div>
+
+                            <div class="px-4 py-2">
+                                <p class="font-bold text-sm mb-1">좋아요 ${likeCount}개</p>
+                                <div class="text-sm">
+                                    <span class="font-bold mr-1">${post.authorName}</span>
+                                    <span class="text-gray-200">${post.content}</span>
+                                </div>
+                                ${commentCount > 0 ? `<button onclick="openReplySheet('${key}')" class="text-gray-500 text-sm mt-1">댓글 ${commentCount}개 모두 보기</button>` : ''}
+                            </div>
+                        </article>
+                    `;
+                    feedContainer.innerHTML += html;
+                });
+                lucide.createIcons();
+            });
+        }
+
+        // 3. 좋아요 기능 (Toggle)
+        window.toggleLike = (postId) => {
+            if(!currentUser) return alert("로그인이 필요합니다.");
+            const likeRef = ref(db, `posts/${postId}/likes/${currentUser.uid}`);
+            
+            get(likeRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    remove(likeRef); // 이미 좋아요 했으면 취소
+                } else {
+                    update(ref(db, `posts/${postId}/likes`), { [currentUser.uid]: true }); // 좋아요 추가
+                    
+                    // 더블클릭 애니메이션 효과 (이미지 위 하트)
+                    const heartAnim = document.getElementById(`heart-anim-${postId}`);
+                    if(heartAnim) {
+                        heartAnim.style.opacity = '1';
+                        heartAnim.style.transform = 'scale(1.2)';
+                        setTimeout(() => {
+                            heartAnim.style.opacity = '0';
+                            heartAnim.style.transform = 'scale(0)';
+                        }, 800);
+                    }
+                }
+            });
+        };
+
+        // 4. 댓글 시트 열기
+        window.openReplySheet = (postId) => {
+            currentPostId = postId;
+            document.getElementById('sheet-reply').classList.add('open');
+            loadReplies(postId);
+        };
+
+        window.closeReplySheet = (e) => {
+            if (e.target.classList.contains('bottom-sheet-overlay')) {
+                document.getElementById('sheet-reply').classList.remove('open');
+                currentPostId = null;
+            }
+        };
+
+        // 5. 댓글 불러오기
+        function loadReplies(postId) {
+            const replyList = document.getElementById('reply-list');
+            const countHeader = document.getElementById('reply-count-header');
+            
+            onValue(ref(db, `posts/${postId}/comments`), (snap) => {
+                replyList.innerHTML = "";
+                const data = snap.val();
+                
+                if (!data) {
+                    countHeader.innerText = "0";
+                    replyList.innerHTML = "<div class='text-center text-gray-500 py-10 text-sm'>첫 댓글을 남겨보세요!</div>";
+                    return;
+                }
+
+                const comments = Object.values(data);
+                countHeader.innerText = comments.length;
+
+                comments.forEach(c => {
+                    replyList.innerHTML += `
+                        <div class="flex gap-3 mb-4 animate-fade-in">
+                            <img src="${c.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + c.author}" class="w-8 h-8 rounded-full bg-gray-700 mt-1">
+                            <div class="flex-1">
+                                <div class="flex items-baseline gap-2">
+                                    <span class="font-bold text-xs text-white">${c.author}</span>
+                                    <span class="text-[10px] text-gray-500">${new Date(c.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                </div>
+                                <p class="text-sm text-gray-200 mt-0.5">${c.text}</p>
+                            </div>
+                        </div>`;
+                });
+                // 스크롤 맨 아래로
+                replyList.scrollTop = replyList.scrollHeight;
+            });
+        }
+
+        // 6. 댓글 작성
+        window.addReply = () => {
+            const input = document.getElementById('reply-input');
+            const text = input.value.trim();
+            if (!text) return;
+            if (!currentUser) return alert("로그인이 필요합니다.");
+
+            const newCommentRef = push(ref(db, `posts/${currentPostId}/comments`));
+            update(newCommentRef, {
+                text: text,
+                author: currentUser.displayName || "익명",
+                avatar: currentUser.photoURL || "",
+                timestamp: Date.now()
+            });
+            
+            input.value = ""; // 입력창 초기화
+        };
+
+        // 아이콘 초기화
+        lucide.createIcons();
+    </script>
+</body>
+</html>

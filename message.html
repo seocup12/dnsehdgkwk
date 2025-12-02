@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POKE RUN: DM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root { --volt: #ccff00; --bg-main: #000000; --bg-card: #111111; --text-main: #ffffff; --border-color: #262626; }
+        body { font-family: sans-serif; background: var(--bg-main); color: var(--text-main); }
+        .msg-bubble { max-width: 75%; padding: 10px 14px; border-radius: 20px; font-size: 14px; }
+        .msg-me { background: var(--volt); color: black; border-bottom-right-radius: 4px; align-self: flex-end; }
+        .msg-other { background: #262626; color: white; border-bottom-left-radius: 4px; align-self: flex-start; }
+    </style>
+</head>
+<body class="flex justify-center h-screen bg-[var(--bg-main)]">
+    <div class="w-full max-w-md h-full relative bg-[var(--bg-main)] flex flex-col overflow-hidden">
+        
+        <div id="dm-list-view" class="flex flex-col h-full w-full">
+            <header class="px-5 py-4 flex items-center justify-between border-b border-[var(--border-color)]">
+                <button onclick="location.href='log.html'"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
+                <span class="font-bold text-lg">Direct Messages</span>
+                <button onclick="alert('친구 찾기 기능')"><i data-lucide="edit" class="w-6 h-6"></i></button>
+            </header>
+            <div id="chat-list" class="flex-1 overflow-y-auto p-0">
+                <div class="text-center text-gray-500 py-10">메시지를 불러오는 중...</div>
+            </div>
+        </div>
+
+        <div id="chat-room" class="absolute inset-0 bg-[var(--bg-main)] z-40 flex flex-col transform translate-x-full transition-transform duration-300">
+            <div class="px-4 py-3 border-b border-[var(--border-color)] flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button onclick="closeChatRoom()"><i data-lucide="arrow-left" class="w-7 h-7"></i></button>
+                    <span id="chat-room-title" class="font-bold text-sm">User</span>
+                </div>
+            </div>
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 flex flex-col gap-2"></div>
+            <div class="p-3 border-t border-[var(--border-color)] flex gap-3">
+                <input type="text" id="msg-input" class="flex-1 bg-[#262626] rounded-full px-4 py-2 outline-none" placeholder="메시지...">
+                <button onclick="sendMessage()" class="text-[var(--volt)] font-bold">전송</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, push, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        
+        const app = initializeApp({ apiKey: "AIzaSyAbHwLLXIH8rBQ8gNMVqE5SE208aIbfFZ0", authDomain: "pokbattle.firebaseapp.com", databaseURL: "https://pokbattle-default-rtdb.firebaseio.com", projectId: "pokbattle" });
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        let currentChatId = null;
+
+        // 채팅방 목록 로드
+        onValue(ref(db, 'groups'), (snap) => {
+            const list = document.getElementById('chat-list');
+            list.innerHTML = "";
+            const data = snap.val();
+            if(!data) return list.innerHTML = "<div class='text-center py-10'>대화가 없습니다.</div>";
+            Object.entries(data).forEach(([key, g]) => {
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-4 p-4 hover:bg-[#111] cursor-pointer border-b border-[#262626]";
+                div.innerHTML = `<div class="w-12 h-12 rounded-full bg-gray-700"></div><div><div class="font-bold">${g.name}</div><div class="text-sm text-gray-500">${g.lastMsg || ''}</div></div>`;
+                div.onclick = () => openChatRoom(key, g.name);
+                list.appendChild(div);
+            });
+        });
+
+        window.openChatRoom = (id, title) => {
+            currentChatId = id;
+            document.getElementById('chat-room-title').innerText = title;
+            document.getElementById('chat-room').style.transform = "translateX(0)";
+            onValue(ref(db, `messages/${id}`), (snap) => {
+                const container = document.getElementById('chat-messages');
+                container.innerHTML = "";
+                const data = snap.val();
+                if(data) Object.values(data).forEach(m => {
+                    const isMe = m.uid === auth.currentUser.uid;
+                    container.innerHTML += `<div class="msg-bubble ${isMe ? 'msg-me' : 'msg-other'}">${m.text}</div>`;
+                });
+                container.scrollTop = container.scrollHeight;
+            });
+        };
+
+        window.closeChatRoom = () => document.getElementById('chat-room').style.transform = "translateX(100%)";
+
+        window.sendMessage = () => {
+            const text = document.getElementById('msg-input').value;
+            if(!text || !currentChatId) return;
+            push(ref(db, `messages/${currentChatId}`), { uid: auth.currentUser.uid, text, timestamp: Date.now() });
+            update(ref(db, `groups/${currentChatId}`), { lastMsg: text });
+            document.getElementById('msg-input').value = "";
+        };
+        lucide.createIcons();
+    </script>
+</body>
+</html>
