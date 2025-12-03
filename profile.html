@@ -153,9 +153,9 @@
                     </button>
                 </div>
                 <!-- 모달 이미지 -->
-                <div class="aspect-square bg-black flex items-center justify-center relative">
-                    <img id="modal-image" class="w-full h-full object-cover">
-                </div>
+                <div class="w-full h-auto bg-black flex items-center justify-center relative min-h-[300px]">
+    <img id="modal-image" class="w-full h-auto object-contain max-h-[70vh]">
+</div>
                 <!-- 모달 하단 정보 -->
                 <div class="p-4">
                     <div class="flex gap-4 mb-3">
@@ -272,7 +272,11 @@
 
                 myPosts.forEach(([key, post]) => {
                     const div = document.createElement('div');
-                    div.className = "relative aspect-square bg-[#1a1a1a] cursor-pointer group overflow-hidden";
+                    div.className = "relative h-auto bg-black cursor-pointer group overflow-hidden mb-1"; 
+div.innerHTML = `
+    <img src="${post.image}" class="w-full h-auto object-contain" loading="lazy">
+    ...
+`;
                     div.onclick = () => openPostModal(post, key);
 
                     // 좋아요 및 댓글 수 계산

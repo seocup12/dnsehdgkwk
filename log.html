@@ -228,8 +228,8 @@
                                 <button class="text-gray-500"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>
                             </div>
 
-                            <div class="w-full bg-[#050505] aspect-square flex items-center justify-center overflow-hidden relative" ondblclick="toggleLike('${key}')">
-                                <img src="${post.image}" class="w-full h-full object-cover" loading="lazy" decoding="async">
+                            <div class="w-full bg-[#050505] h-auto flex items-center justify-center overflow-hidden relative" ondblclick="toggleLike('${key}')">
+    <img src="${post.image}" class="w-full h-auto object-contain" loading="lazy" decoding="async">
                                 <i id="heart-anim-${key}" data-lucide="heart" class="w-24 h-24 text-[var(--volt)] fill-[var(--volt)] absolute opacity-0 transition-opacity duration-300 transform scale-0"></i>
                             </div>
 
