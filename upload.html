@@ -42,7 +42,7 @@
         </div>
 
         <nav class="w-full bg-[var(--bg-main)] border-t border-[var(--border-color)] px-2 py-4 flex justify-between items-end pb-8">
-            <button onclick="location.href='log.html'" class="flex-1 flex flex-col items-center gap-1 text-[#9ca3af]"><i data-lucide="home" class="w-6 h-6"></i><span class="text-[10px]">피드</span></button>
+            <button onclick="location.href='log.html'" class="flex-1 flex flex-col items-center gap-1 text-[#9ca3af]"><i data-lucide="log" class="w-6 h-6"></i><span class="text-[10px]">피드</span></button>
             <button onclick="location.href='reels.html'" class="flex-1 flex flex-col items-center gap-1 text-[#9ca3af]"><i data-lucide="clapperboard" class="w-6 h-6"></i><span class="text-[10px]">릴스</span></button>
             <div class="relative w-16 flex justify-center"><div class="absolute bottom-2 bg-[var(--volt)] text-black p-3.5 rounded-full border-4 border-[var(--bg-main)]"><i data-lucide="plus" class="w-7 h-7"></i></div></div>
             <button onclick="location.href='profile.html'" class="flex-1 flex flex-col items-center gap-1 text-[#9ca3af]"><i data-lucide="user" class="w-6 h-6"></i><span class="text-[10px]">프로필</span></button>
@@ -98,7 +98,7 @@
                     timestamp: Date.now()
                 }).then(() => {
                     alert("업로드 완료!");
-                    location.href = "home.html";
+                    location.href = "log.html";
                 });
             };
             reader.readAsDataURL(fileInput.files[0]);
