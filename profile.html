@@ -2,20 +2,37 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 화면 배율 고정 (필수 설정 유지) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>POKE RUN: PROFILE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,700;1,900&family=Inter:wght@400;700;900&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root { --volt: #ccff00; --bg-main: #000000; --bg-card: #111111; --text-main: #ffffff; --border-color: #262626; }
-        body { font-family: sans-serif; background: var(--bg-main); color: var(--text-main); }
+        /* 폰트 및 테마 설정 (유지) */
+        :root { --volt: #ccff00; --bg-main: #000000; --bg-card: #111111; --text-main: #ffffff; --text-sub: #9ca3af; --border-color: #262626; }
+        html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; position: fixed; background: var(--bg-main); color: var(--text-main); font-family: 'Inter', 'Noto Sans KR', sans-serif; touch-action: pan-y; }
+        .font-sport { font-family: 'Chakra Petch', sans-serif; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        
+        /* 모달 애니메이션 */
+        .modal-enter { opacity: 0; transform: scale(0.95); }
+        .modal-enter-active { opacity: 1; transform: scale(1); transition: all 0.2s ease-out; }
+        .modal-exit { opacity: 1; transform: scale(1); }
+        .modal-exit-active { opacity: 0; transform: scale(0.95); transition: all 0.2s ease-in; }
     </style>
 </head>
 <body class="flex justify-center h-screen bg-[var(--bg-main)]">
-    <div class="w-full max-w-md h-full relative bg-[var(--bg-main)] flex flex-col">
-        <main class="flex-1 overflow-y-auto pb-20">
-            <div class="px-4 pt-6 pb-2">
+
+    <!-- 앱 컨테이너 -->
+    <div class="w-full max-w-md h-full relative bg-[var(--bg-main)] flex flex-col shadow-2xl border-x border-[var(--border-color)] sm:border-x-0">
+        
+        <!-- 메인 컨텐츠 영역 -->
+        <main class="flex-1 overflow-y-auto pb-20 scrollbar-hide">
+            <!-- 프로필 상단 정보 -->
+            <div class="px-4 pt-6 pb-6">
                 <div class="flex items-center justify-between mb-4">
+                    <!-- 프로필 이미지 -->
                     <div class="relative group cursor-pointer" onclick="document.getElementById('profile-img-input').click()">
                         <div class="w-20 h-20 rounded-full p-[2px] bg-gradient-to-tr from-[var(--volt)] to-purple-500">
                             <img id="my-profile-img" class="w-full h-full rounded-full border-2 border-[var(--bg-main)] object-cover bg-[var(--bg-card)]">
@@ -23,60 +40,229 @@
                         <div class="absolute bottom-0 right-0 bg-[var(--volt)] text-black rounded-full p-1 border-2 border-[var(--bg-main)]"><i data-lucide="plus" class="w-3 h-3"></i></div>
                         <input type="file" id="profile-img-input" class="hidden" accept="image/*" onchange="uploadProfileImage(this)">
                     </div>
+                    
+                    <!-- 스탯 정보 (게시물/팔로워/팔로잉) -->
                     <div class="flex-1 flex justify-around text-[var(--text-main)] ml-4">
-                        <div class="flex flex-col items-center"><span class="font-bold text-lg">12</span><span class="text-xs text-gray-500">게시물</span></div>
-                        <div class="flex flex-col items-center"><span class="font-bold text-lg">128</span><span class="text-xs text-gray-500">팔로워</span></div>
-                        <div class="flex flex-col items-center"><span class="font-bold text-lg">45</span><span class="text-xs text-gray-500">팔로잉</span></div>
+                        <div class="flex flex-col items-center">
+                            <span id="post-count" class="font-bold text-lg">0</span>
+                            <span class="text-xs text-gray-500">게시물</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="font-bold text-lg">128</span>
+                            <span class="text-xs text-gray-500">팔로워</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="font-bold text-lg">45</span>
+                            <span class="text-xs text-gray-500">팔로잉</span>
+                        </div>
                     </div>
                 </div>
+                
+                <!-- 이름 및 소개 -->
                 <div class="mb-5">
                     <h3 id="my-profile-name" class="font-bold text-sm">Loading...</h3>
                     <p class="text-xs text-gray-500 mt-1">오늘도 즐겁게 달리기 🏃‍♂️💨</p>
                 </div>
+                
+                <!-- 버튼 -->
                 <div class="flex gap-2 text-sm font-bold">
-                    <button class="flex-1 bg-[#262626] py-1.5 rounded-lg border border-[#262626]">프로필 편집</button>
-                    <button class="flex-1 bg-[#262626] py-1.5 rounded-lg border border-[#262626]">프로필 공유</button>
+                    <button class="flex-1 bg-[#262626] py-1.5 rounded-lg border border-[#262626] active:scale-95 transition">프로필 편집</button>
+                    <button class="flex-1 bg-[#262626] py-1.5 rounded-lg border border-[#262626] active:scale-95 transition">프로필 공유</button>
                 </div>
             </div>
-            <div class="grid grid-cols-3 gap-0.5">
-                <div class="bg-gray-800 aspect-square"></div>
-                <div class="bg-gray-800 aspect-square"></div>
-                <div class="bg-gray-800 aspect-square"></div>
+
+            <!-- 탭 메뉴 (아이콘) -->
+            <div class="flex border-t border-[var(--border-color)]">
+                <button class="flex-1 py-3 border-b-2 border-[var(--text-main)] flex justify-center"><i data-lucide="grid-3x3" class="w-5 h-5"></i></button>
+                <button class="flex-1 py-3 flex justify-center text-gray-500"><i data-lucide="clapperboard" class="w-5 h-5"></i></button>
+                <button class="flex-1 py-3 flex justify-center text-gray-500"><i data-lucide="user-check" class="w-5 h-5"></i></button>
+            </div>
+
+            <!-- [수정됨] 내 게시물 그리드 영역 -->
+            <div id="my-post-grid" class="grid grid-cols-3 gap-0.5 pb-2">
+                <!-- 로딩 중 스켈레톤 -->
+                <div class="bg-[#1a1a1a] aspect-square animate-pulse"></div>
+                <div class="bg-[#1a1a1a] aspect-square animate-pulse"></div>
+                <div class="bg-[#1a1a1a] aspect-square animate-pulse"></div>
+            </div>
+            
+            <!-- 게시물 없음 표시 (숨김 상태) -->
+            <div id="no-posts-msg" class="hidden py-20 text-center text-gray-500">
+                <div class="flex justify-center mb-2"><i data-lucide="camera" class="w-10 h-10 opacity-50"></i></div>
+                <p class="text-sm">아직 게시물이 없습니다.</p>
             </div>
         </main>
 
-        <nav class="w-full bg-[var(--bg-main)] border-t border-[var(--border-color)] px-2 py-4 flex justify-between items-end pb-8">
-            <button onclick="location.href='log.html'" class="flex-1 flex flex-col items-center gap-1 text-[#9ca3af]"><i data-lucide="home" class="w-6 h-6"></i><span class="text-[10px]">피드</span></button>
-            <button onclick="location.href='reels.html'" class="flex-1 flex flex-col items-center gap-1 text-[#9ca3af]"><i data-lucide="clapperboard" class="w-6 h-6"></i><span class="text-[10px]">릴스</span></button>
-            <div class="relative w-16 flex justify-center"><button onclick="location.href='upload.html'" class="absolute bottom-2 bg-[var(--volt)] text-black p-3.5 rounded-full border-4 border-black"><i data-lucide="plus" class="w-7 h-7"></i></button></div>
-            <button onclick="location.reload()" class="flex-1 flex flex-col items-center gap-1 text-[var(--volt)]"><i data-lucide="user" class="w-6 h-6"></i><span class="text-[10px]">프로필</span></button>
-            <button onclick="location.href='settings.html'" class="flex-1 flex flex-col items-center gap-1 text-[#9ca3af]"><i data-lucide="settings" class="w-6 h-6"></i><span class="text-[10px]">설정</span></button>
+        <!-- [추가됨] 게시물 상세 보기 모달 (인스타 스타일) -->
+        <div id="post-modal" class="fixed inset-0 z-50 bg-black/90 hidden flex items-center justify-center p-4 backdrop-blur-sm" onclick="closePostModal()">
+            <div class="w-full max-w-sm bg-[var(--bg-card)] rounded-xl overflow-hidden shadow-2xl border border-[var(--border-color)]" onclick="event.stopPropagation()">
+                <!-- 모달 헤더 -->
+                <div class="px-4 py-3 flex items-center justify-between border-b border-[var(--border-color)]">
+                    <div class="flex items-center gap-2">
+                        <img id="modal-avatar" class="w-6 h-6 rounded-full bg-gray-700">
+                        <span id="modal-username" class="font-bold text-sm">Username</span>
+                    </div>
+                    <button onclick="closePostModal()"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <!-- 모달 이미지 -->
+                <div class="aspect-square bg-black flex items-center justify-center">
+                    <img id="modal-image" class="w-full h-full object-cover">
+                </div>
+                <!-- 모달 하단 정보 -->
+                <div class="p-4">
+                    <div class="flex gap-4 mb-3">
+                        <i data-lucide="heart" class="w-6 h-6 text-[var(--volt)] fill-[var(--volt)]"></i>
+                        <i data-lucide="message-circle" class="w-6 h-6"></i>
+                        <i data-lucide="send" class="w-6 h-6 transform -rotate-45 mb-1"></i>
+                    </div>
+                    <div class="text-sm font-bold mb-1">좋아요 <span id="modal-likes">0</span>개</div>
+                    <div class="text-sm text-gray-400">댓글 <span id="modal-comments">0</span>개</div>
+                    <div id="modal-content" class="text-sm mt-2 text-white"></div>
+                    <div id="modal-date" class="text-[10px] text-gray-500 mt-2 uppercase"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- [유지] 릴스 규격으로 통일된 하단 네비게이션 -->
+        <nav class="w-full bg-[var(--bg-main)] border-t border-[var(--border-color)] px-2 py-4 flex justify-between items-end pb-8 z-30">
+            <!-- 1. 피드 -->
+            <button onclick="location.href='log.html'" class="flex-1 flex flex-col items-center gap-1 text-[var(--text-sub)] pb-1">
+                <i data-lucide="home" class="w-6 h-6"></i>
+                <span class="text-[10px] font-bold">피드</span>
+            </button>
+            
+            <!-- 2. 릴스 -->
+            <button onclick="location.href='reels.html'" class="flex-1 flex flex-col items-center gap-1 text-[var(--text-sub)] pb-1">
+                <i data-lucide="clapperboard" class="w-6 h-6"></i>
+                <span class="text-[10px] font-bold">릴스</span>
+            </button>
+            
+            <!-- 3. 업로드 -->
+            <div class="relative w-16 flex justify-center z-10">
+                <button onclick="location.href='upload.html'" class="absolute bottom-2 bg-[var(--volt)] text-black p-3.5 rounded-full border-4 border-black">
+                    <i data-lucide="plus" class="w-7 h-7"></i>
+                </button>
+            </div>
+        
+            <!-- 4. 프로필 (활성 상태) -->
+            <button onclick="location.reload()" class="flex-1 flex flex-col items-center gap-1 text-[var(--volt)] pb-1">
+                <i data-lucide="user" class="w-6 h-6"></i>
+                <span class="text-[10px] font-bold">프로필</span>
+            </button>
+            
+            <!-- 5. 설정 -->
+            <button onclick="location.href='settings.html'" class="flex-1 flex flex-col items-center gap-1 text-[var(--text-sub)] pb-1">
+                <i data-lucide="settings" class="w-6 h-6"></i>
+                <span class="text-[10px] font-bold">설정</span>
+            </button>
         </nav>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, onValue, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         
-        const app = initializeApp({ apiKey: "AIzaSyAbHwLLXIH8rBQ8gNMVqE5SE208aIbfFZ0", authDomain: "pokbattle.firebaseapp.com", projectId: "pokbattle" });
+        const firebaseConfig = { apiKey: "AIzaSyAbHwLLXIH8rBQ8gNMVqE5SE208aIbfFZ0", authDomain: "pokbattle.firebaseapp.com", databaseURL: "https://pokbattle-default-rtdb.firebaseio.com", projectId: "pokbattle", storageBucket: "pokbattle.firebasestorage.app", messagingSenderId: "445300582484", appId: "1:445300582484:web:f8f1373a3bbf643face5c1" };
+        const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getDatabase(app);
 
+        let currentUser = null;
+
+        // 1. 인증 상태 확인 및 프로필 로드
         onAuthStateChanged(auth, (user) => {
             if(user) {
-                document.getElementById('my-profile-name').innerText = user.displayName;
-                document.getElementById('my-profile-img').src = user.photoURL || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + user.uid;
+                currentUser = user;
+                document.getElementById('my-profile-name').innerText = user.displayName || "러너";
+                document.getElementById('my-profile-img').src = user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`;
+                loadMyPosts(user.uid); // 내 게시물 불러오기
             } else {
                 location.href = 'home.html';
             }
         });
 
+        // 2. 내 게시물 불러오기 (인스타 그리드 스타일)
+        function loadMyPosts(userId) {
+            const grid = document.getElementById('my-post-grid');
+            const postsRef = ref(db, 'posts');
+
+            onValue(postsRef, (snapshot) => {
+                grid.innerHTML = ""; // 초기화
+                const data = snapshot.val();
+                
+                if (!data) {
+                    grid.innerHTML = "";
+                    document.getElementById('no-posts-msg').classList.remove('hidden');
+                    document.getElementById('post-count').innerText = "0";
+                    return;
+                }
+
+                // 내 게시물만 필터링
+                const myPosts = Object.entries(data).filter(([key, post]) => post.author === userId).reverse(); // 최신순
+                
+                document.getElementById('post-count').innerText = myPosts.length;
+
+                if (myPosts.length === 0) {
+                    document.getElementById('no-posts-msg').classList.remove('hidden');
+                    return;
+                }
+
+                document.getElementById('no-posts-msg').classList.add('hidden');
+
+                myPosts.forEach(([key, post]) => {
+                    // 그리드 아이템 생성
+                    const div = document.createElement('div');
+                    div.className = "relative aspect-square bg-[#1a1a1a] cursor-pointer group overflow-hidden";
+                    div.onclick = () => openPostModal(post, key); // 클릭 시 모달 오픈
+
+                    div.innerHTML = `
+                        <img src="${post.image}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" loading="lazy">
+                        <!-- 호버 시 좋아요/댓글 수 오버레이 -->
+                        <div class="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center gap-4 text-white font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div class="flex items-center"><i data-lucide="heart" class="w-5 h-5 mr-1 fill-white"></i> ${post.likes ? Object.keys(post.likes).length : 0}</div>
+                            <div class="flex items-center"><i data-lucide="message-circle" class="w-5 h-5 mr-1 fill-white"></i> ${post.comments ? Object.keys(post.comments).length : 0}</div>
+                        </div>
+                    `;
+                    grid.appendChild(div);
+                });
+                lucide.createIcons();
+            });
+        }
+
+        // 3. 게시물 상세 모달 열기
+        window.openPostModal = (post, postId) => {
+            const modal = document.getElementById('post-modal');
+            const likes = post.likes ? Object.keys(post.likes).length : 0;
+            const comments = post.comments ? Object.keys(post.comments).length : 0;
+
+            document.getElementById('modal-image').src = post.image;
+            document.getElementById('modal-avatar').src = post.authorAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author}`;
+            document.getElementById('modal-username').innerText = post.authorName;
+            document.getElementById('modal-likes').innerText = likes;
+            document.getElementById('modal-comments').innerText = comments;
+            document.getElementById('modal-content').innerText = post.content;
+            document.getElementById('modal-date').innerText = new Date(post.timestamp).toLocaleDateString();
+
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        // 4. 모달 닫기
+        window.closePostModal = () => {
+            document.getElementById('post-modal').classList.add('hidden');
+        };
+
+        // 5. 프로필 이미지 업로드 (기존 기능 유지)
         window.uploadProfileImage = (input) => {
             if(input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = async (e) => {
                     const newImg = e.target.result;
                     document.getElementById('my-profile-img').src = newImg;
-                    await updateProfile(auth.currentUser, { photoURL: newImg });
+                    if (auth.currentUser) {
+                        await updateProfile(auth.currentUser, { photoURL: newImg });
+                    }
                 };
                 reader.readAsDataURL(input.files[0]);
             }

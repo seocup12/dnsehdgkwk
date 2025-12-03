@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>POKE RUN: UPLOAD</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -41,13 +41,29 @@
             <button onclick="handleUpload()" class="w-full bg-[var(--volt)] text-black font-bold py-3.5 mt-6 rounded-xl">업로드</button>
         </div>
 
-        <nav class="w-full bg-[var(--bg-main)] border-t border-[var(--border-color)] px-2 py-4 flex justify-between items-end pb-8">
-            <button onclick="location.href='log.html'" class="flex-1 flex flex-col items-center gap-1 text-[#9ca3af]"><i data-lucide="log" class="w-6 h-6"></i><span class="text-[10px]">피드</span></button>
-            <button onclick="location.href='reels.html'" class="flex-1 flex flex-col items-center gap-1 text-[#9ca3af]"><i data-lucide="clapperboard" class="w-6 h-6"></i><span class="text-[10px]">릴스</span></button>
-            <div class="relative w-16 flex justify-center"><div class="absolute bottom-2 bg-[var(--volt)] text-black p-3.5 rounded-full border-4 border-[var(--bg-main)]"><i data-lucide="plus" class="w-7 h-7"></i></div></div>
-            <button onclick="location.href='profile.html'" class="flex-1 flex flex-col items-center gap-1 text-[#9ca3af]"><i data-lucide="user" class="w-6 h-6"></i><span class="text-[10px]">프로필</span></button>
-            <button onclick="location.href='settings.html'" class="flex-1 flex flex-col items-center gap-1 text-[#9ca3af]"><i data-lucide="settings" class="w-6 h-6"></i><span class="text-[10px]">설정</span></button>
-        </nav>
+        <nav class="w-full bg-[var(--bg-main)] border-t border-[var(--border-color)] px-2 py-4 flex justify-between items-end pb-8 z-30">
+    <button onclick="location.href='log.html'" class="flex-1 flex flex-col items-center gap-1 text-[var(--text-sub)] pb-1">
+        <i data-lucide="home" class="w-6 h-6"></i>
+        <span class="text-[10px] font-bold">피드</span>
+    </button>
+    <button onclick="location.href='reels.html'" class="flex-1 flex flex-col items-center gap-1 text-[var(--text-sub)] pb-1">
+        <i data-lucide="clapperboard" class="w-6 h-6"></i>
+        <span class="text-[10px] font-bold">릴스</span>
+    </button>
+    <div class="relative w-16 flex justify-center z-10">
+        <button onclick="location.reload()" class="absolute bottom-2 bg-[var(--volt)] text-black p-3.5 rounded-full border-4 border-[var(--bg-main)] shadow-lg active:scale-95 transition-transform">
+            <i data-lucide="plus" class="w-7 h-7"></i>
+        </button>
+    </div>
+    <button onclick="location.href='profile.html'" class="flex-1 flex flex-col items-center gap-1 text-[var(--text-sub)] pb-1">
+        <i data-lucide="user" class="w-6 h-6"></i>
+        <span class="text-[10px] font-bold">프로필</span>
+    </button>
+    <button onclick="location.href='settings.html'" class="flex-1 flex flex-col items-center gap-1 text-[var(--text-sub)] pb-1">
+        <i data-lucide="settings" class="w-6 h-6"></i>
+        <span class="text-[10px] font-bold">설정</span>
+    </button>
+</nav>
     </div>
 
     <script type="module">
