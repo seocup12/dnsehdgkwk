@@ -46,7 +46,7 @@
         }
         .animate-heart { animation: heart-pop 0.3s ease-in-out; }
 
-        /* 댓글 시트 (Bottom Sheet) 스타일 */
+        /* 댓글/알림 시트 (Bottom Sheet) 스타일 */
         .bottom-sheet-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); z-index: 50;
@@ -66,7 +66,7 @@
         .sheet-handle {
             width: 40px; height: 4px; background: var(--bg-sub);
             border-radius: 2px; margin: 12px auto;
-            cursor: grab; /* PC 마우스 커서 표시 */
+            cursor: grab;
         }
 
         .input-dark {
@@ -85,7 +85,9 @@
                 POKE<span class="text-[var(--volt)]">RUN</span>
             </h1>
             <div class="flex gap-4 items-center"> 
-                <button><i data-lucide="heart" class="w-6 h-6 text-[var(--text-main)]"></i></button>
+                <button onclick="openActivitySheet()">
+                    <i data-lucide="heart" class="w-6 h-6 text-[var(--text-main)]"></i>
+                </button>
                 <button onclick="location.href='message.html'">
                     <i data-lucide="send" class="w-6 h-6 text-[var(--text-main)] transform -rotate-45 mt-[9px]"></i>
                 </button>
@@ -148,14 +150,25 @@
             </div>
         </div>
 
+        <div id="sheet-activity" class="bottom-sheet-overlay" onclick="closeActivitySheet(event)">
+            <div id="sheet-activity-modal" class="bottom-sheet shadow-2xl">
+                <div class="sheet-handle"></div>
+                <div class="px-5 pb-3 border-b border-[var(--border-color)] text-center font-bold text-sm">
+                    활동
+                </div>
+                <div id="activity-list" class="flex-1 overflow-y-auto p-4">
+                    <div class="text-center text-gray-500 py-10 text-sm">로딩 중...</div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getDatabase, ref, onValue, push, update, remove, get, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, push, update, remove, get, query, limitToLast, orderByChild } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // Firebase 설정
         const firebaseConfig = { 
             apiKey: "AIzaSyAbHwLLXIH8rBQ8gNMVqE5SE208aIbfFZ0", 
             authDomain: "pokbattle.firebaseapp.com", 
@@ -185,7 +198,7 @@
             }
         });
 
-        // 2. 피드 불러오기 (최적화: 20개, 배치 렌더링)
+        // 2. 피드 불러오기
         function loadFeed() {
             const feedContainer = document.getElementById('feed-container');
             const postsQuery = query(ref(db, 'posts'), limitToLast(20));
@@ -229,7 +242,7 @@
                             </div>
 
                             <div class="w-full bg-[#050505] h-auto flex items-center justify-center overflow-hidden relative" ondblclick="toggleLike('${key}')">
-    <img src="${post.image}" class="w-full h-auto object-contain" loading="lazy" decoding="async">
+                                <img src="${post.image}" class="w-full h-auto object-contain" loading="lazy" decoding="async">
                                 <i id="heart-anim-${key}" data-lucide="heart" class="w-24 h-24 text-[var(--volt)] fill-[var(--volt)] absolute opacity-0 transition-opacity duration-300 transform scale-0"></i>
                             </div>
 
@@ -241,12 +254,8 @@
                                     <button onclick="openReplySheet('${key}')">
                                         <i data-lucide="message-circle" class="w-7 h-7 text-white hover:text-gray-300"></i>
                                     </button>
-                                    <button>
-                                        <i data-lucide="send" class="w-7 h-7 text-white hover:text-gray-300 transform -rotate-45 ml-1 mt-[9px]"></i>
-                                    </button>
+                                    </div>
                                 </div>
-                                <button class="text-white"><i data-lucide="bookmark" class="w-7 h-7"></i></button>
-                            </div>
 
                             <div class="px-4 py-2">
                                 <p class="font-bold text-sm mb-1">좋아요 ${likeCount}개</p>
@@ -265,27 +274,25 @@
             });
         }
 
-        // 3. 좋아요
+        // 3. 좋아요 & 알림 전송 기능
         window.toggleLike = (postId) => {
             if(!currentUser) return alert("로그인이 필요합니다.");
 
             const icon = document.getElementById(`like-icon-${postId}`);
             if (icon) {
                 if (icon.classList.contains('text-[var(--volt)]')) {
+                    // 좋아요 취소 UI
                     icon.classList.remove('fill-[var(--volt)]', 'text-[var(--volt)]');
                     icon.classList.add('text-white');
                 } else {
+                    // 좋아요 UI
                     icon.classList.add('fill-[var(--volt)]', 'text-[var(--volt)]');
                     icon.classList.remove('text-white');
-                    
                     const heartAnim = document.getElementById(`heart-anim-${postId}`);
                     if(heartAnim) {
                         heartAnim.style.opacity = '1';
                         heartAnim.style.transform = 'scale(1.2)';
-                        setTimeout(() => {
-                            heartAnim.style.opacity = '0';
-                            heartAnim.style.transform = 'scale(0)';
-                        }, 800);
+                        setTimeout(() => { heartAnim.style.opacity = '0'; heartAnim.style.transform = 'scale(0)'; }, 800);
                     }
                 }
             }
@@ -295,7 +302,27 @@
                 if (snapshot.exists()) {
                     remove(likeRef);
                 } else {
+                    // 좋아요 저장
                     update(ref(db, `posts/${postId}/likes`), { [currentUser.uid]: true });
+
+                    // 알림 보내기 (작성자에게)
+                    get(ref(db, `posts/${postId}`)).then(postSnap => {
+                        if(postSnap.exists()){
+                            const postData = postSnap.val();
+                            // 본인 게시물이 아닐 때만 알림 전송
+                            if(postData.author !== currentUser.uid){ 
+                                push(ref(db, `notifications/${postData.author}`), {
+                                    type: 'like',
+                                    fromUid: currentUser.uid,
+                                    fromName: currentUser.displayName || "익명",
+                                    fromAvatar: currentUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.uid}`,
+                                    postId: postId,
+                                    postImage: postData.image,
+                                    timestamp: Date.now()
+                                });
+                            }
+                        }
+                    });
                 }
             });
         };
@@ -313,6 +340,59 @@
                 currentPostId = null;
             }
         };
+
+        // 알림 시트 열기
+        window.openActivitySheet = () => {
+            if(!currentUser) return;
+            document.getElementById('sheet-activity').classList.add('open');
+            loadNotifications();
+        };
+
+        // 알림 시트 닫기
+        window.closeActivitySheet = (e) => {
+            if (e.target.classList.contains('bottom-sheet-overlay')) {
+                document.getElementById('sheet-activity').classList.remove('open');
+            }
+        };
+
+        // 알림 데이터 불러오기
+        function loadNotifications() {
+            const list = document.getElementById('activity-list');
+            const notiRef = query(ref(db, `notifications/${currentUser.uid}`), limitToLast(30));
+            
+            onValue(notiRef, (snapshot) => {
+                const data = snapshot.val();
+                if (!data) {
+                    list.innerHTML = `<div class="text-center text-gray-500 py-10 text-sm">
+                        <i data-lucide="bell-off" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+                        새로운 활동이 없습니다.
+                    </div>`;
+                    lucide.createIcons();
+                    return;
+                }
+
+                const notis = Object.values(data).reverse(); // 최신순 정렬
+                let html = "";
+                
+                notis.forEach(noti => {
+                    if(noti.type === 'like') {
+                        html += `
+                        <div class="flex items-center gap-3 py-3 border-b border-[var(--border-color)]">
+                            <img src="${noti.fromAvatar}" class="w-10 h-10 rounded-full bg-gray-800 object-cover">
+                            <div class="flex-1 text-sm">
+                                <span class="font-bold text-white">${noti.fromName}</span>님이 회원님의 게시물을 좋아합니다.
+                                <div class="text-xs text-gray-500 mt-1">${new Date(noti.timestamp).toLocaleDateString()}</div>
+                            </div>
+                            <img src="${noti.postImage}" class="w-10 h-10 rounded object-cover border border-[var(--border-color)]">
+                        </div>
+                        `;
+                    }
+                });
+                
+                list.innerHTML = html;
+                lucide.createIcons();
+            });
+        }
 
         // 5. 댓글 로드
         function loadReplies(postId) {
@@ -374,75 +454,70 @@
 
         lucide.createIcons();
 
-        /* --- [모바일 & PC 통합] 댓글창 드래그 닫기 로직 (PC 마우스 지원 포함) --- */
-        const sheet = document.getElementById('sheet-modal');
-        const list = document.getElementById('reply-list');
-        let touchStart = 0;
-        let touchCurrent = 0;
-        let isDragging = false;
+        /* --- [모바일 & PC 통합] 드래그 닫기 로직 --- */
+        // 댓글 시트용
+        setupDragToClose('sheet-modal', 'reply-list', 'sheet-reply');
+        // 알림 시트용
+        setupDragToClose('sheet-activity-modal', 'activity-list', 'sheet-activity');
 
-        // --- 모바일 (Touch) ---
-        sheet.addEventListener('touchstart', (e) => {
-            if (list.contains(e.target) && list.scrollTop > 0) return;
-            touchStart = e.touches[0].clientY;
-            isDragging = true;
-            sheet.style.transition = 'none';
-        });
+        function setupDragToClose(sheetId, listId, overlayId) {
+            const sheet = document.getElementById(sheetId);
+            const list = document.getElementById(listId);
+            const overlay = document.getElementById(overlayId);
+            let touchStart = 0;
+            let touchCurrent = 0;
+            let isDragging = false;
 
-        sheet.addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
-            touchCurrent = e.touches[0].clientY;
-            const delta = touchCurrent - touchStart;
-            if (delta > 0) {
-                if(e.cancelable) e.preventDefault();
-                sheet.style.transform = `translateY(${delta}px)`;
-            }
-        });
+            // Touch
+            sheet.addEventListener('touchstart', (e) => {
+                if (list.contains(e.target) && list.scrollTop > 0) return;
+                touchStart = e.touches[0].clientY;
+                isDragging = true;
+                sheet.style.transition = 'none';
+            });
+            sheet.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                touchCurrent = e.touches[0].clientY;
+                const delta = touchCurrent - touchStart;
+                if (delta > 0) {
+                    if(e.cancelable) e.preventDefault();
+                    sheet.style.transform = `translateY(${delta}px)`;
+                }
+            });
+            sheet.addEventListener('touchend', () => handleDragEnd());
 
-        sheet.addEventListener('touchend', (e) => {
-            if (!isDragging) return;
-            handleDragEnd();
-        });
+            // Mouse
+            sheet.addEventListener('mousedown', (e) => {
+                if (list.contains(e.target) && list.scrollTop > 0) return;
+                touchStart = e.clientY;
+                isDragging = true;
+                sheet.style.transition = 'none';
+            });
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                touchCurrent = e.clientY;
+                const delta = touchCurrent - touchStart;
+                if (delta > 0) sheet.style.transform = `translateY(${delta}px)`;
+            });
+            window.addEventListener('mouseup', () => {
+                if(isDragging) handleDragEnd();
+            });
 
-        // --- PC (Mouse) ---
-        sheet.addEventListener('mousedown', (e) => {
-            if (list.contains(e.target) && list.scrollTop > 0) return;
-            touchStart = e.clientY;
-            isDragging = true;
-            sheet.style.transition = 'none';
-        });
-
-        window.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            touchCurrent = e.clientY;
-            const delta = touchCurrent - touchStart;
-            if (delta > 0) {
-                sheet.style.transform = `translateY(${delta}px)`;
-            }
-        });
-
-        window.addEventListener('mouseup', (e) => {
-            if (!isDragging) return;
-            handleDragEnd();
-        });
-
-        // --- 드래그 종료 처리 (공통 함수) ---
-        function handleDragEnd() {
-            isDragging = false;
-            sheet.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'; 
-
-            const delta = touchCurrent - touchStart;
-            if (delta > 120) {
-                document.getElementById('sheet-reply').classList.remove('open');
-                setTimeout(() => { 
+            function handleDragEnd() {
+                isDragging = false;
+                sheet.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'; 
+                const delta = touchCurrent - touchStart;
+                if (delta > 120) {
+                    overlay.classList.remove('open');
+                    setTimeout(() => { 
+                        sheet.style.transform = ''; 
+                        if(overlayId === 'sheet-reply') currentPostId = null;
+                    }, 300);
+                } else {
                     sheet.style.transform = ''; 
-                    currentPostId = null;
-                }, 300);
-            } else {
-                sheet.style.transform = ''; 
+                }
+                touchStart = 0; touchCurrent = 0;
             }
-            touchStart = 0;
-            touchCurrent = 0;
         }
     </script>
 </body>
