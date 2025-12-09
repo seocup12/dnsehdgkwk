@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>WEIGHT RUN: PROFILE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,700;1,900&family=Inter:wght@400;700;900&family=Noto+Sans+KR:wght@400;0,700;0,900&display=swap" rel="stylesheet">
+    <style>
+        /* --- 1. 기본 테마 (다크 모드) 변수 --- */
+        :root { 
+            --volt: #ccff00; /* 메인 강조색 */
+            --bg-main: #000000; /* 메인 배경색 */
+            --bg-card: #111111; /* 카드 배경색 */
+            --bg-sub: #222222; /* 서브 배경/버튼 색상 */
+            --text-main: #ffffff; 
+            --text-sub: #9ca3af; 
+            --border-color: #262626; 
+        }
+        
+        /* ⚪ 2. 화이트 모드 디자인 변수 적용 */
+        [data-theme="light"] {
+            --volt: #2563eb;          
+            --bg-main: #f0f4f8;       
+            --bg-card: #ffffff;       
+            --bg-sub: #e5e7eb;        
+            --text-main: #1a1a1a;     
+            --text-sub: #4b5563;      
+            --border-color: #cccccc;  
+        }
+
+        html, body { 
+            width: 100%; height: 100%; margin: 0; padding: 0; 
+            background: var(--bg-main); 
+            color: var(--text-main); 
+            font-family: 'Inter', 'Noto Sans KR', sans-serif; 
+            transition: background-color 0.3s, color 0.3s; 
+            touch-action: pan-y; 
+        }
+        .font-sport { font-family: 'Chakra Petch', sans-serif; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        
+    </style>
+</head>
+<body class="flex justify-center h-screen bg-[var(--bg-main)]">
+
+    <div class="w-full max-w-md h-full relative bg-[var(--bg-main)] flex flex-col shadow-2xl border-x border-[var(--border-color)] sm:border-x-0">
+        
+        <header class="sticky top-0 z-20 p-4 border-b border-[var(--border-color)] bg-[var(--bg-main)] transition-colors">
+            <div class="flex justify-between items-center">
+                <h1 class="font-bold text-xl font-sport flex items-center gap-1">
+                    <i data-lucide="dumbbell" class="w-6 h-6 text-[var(--volt)]"></i>
+                    <span class="text-[var(--text-main)]">WEIGHT</span><span class="text-[var(--volt)]">RUN</span>
+                </h1>
+                <button onclick="toggleTheme()" class="text-[var(--text-main)] hover:text-[var(--volt)] transition-colors p-2 rounded-full active:bg-[var(--bg-card)]">
+                    <i id="theme-icon" data-lucide="sun-moon" class="w-6 h-6 drop-shadow-md"></i>
+                </button>
+            </div>
+        </header>
+        
+        <main class="flex-1 overflow-y-auto pb-4 scrollbar-hide">
+            
+            <div class="px-4 pt-8 pb-6 border-b border-[var(--border-color)]">
+                <div class="flex items-center justify-start mb-4">
+                    <div class="w-20 h-20 rounded-full p-[2px] bg-gradient-to-tr from-[var(--volt)] to-purple-500">
+                        <img id="my-profile-img" class="w-full h-full rounded-full border-2 border-[var(--bg-main)] object-cover bg-[var(--bg-card)]" 
+                             src="https://via.placeholder.com/150/000000/FFFFFF?text=W" alt="Profile">
+                    </div>
+                    
+                    <div class="ml-4">
+                        <h3 id="my-profile-name" class="font-bold text-xl text-[var(--text-main)]">웨이트 러너 1호</h3>
+                        <p id="my-profile-bio" class="text-sm text-[var(--text-sub)] mt-1">🔥 건강한 몸을 만들자! | 모토</p>
+                    </div>
+                </div>
+                
+                <div class="flex gap-2 text-sm font-bold mt-4">
+                    <button class="flex-1 bg-[var(--bg-sub)] py-1.5 rounded-lg border border-[var(--border-color)] active:scale-95 transition text-[var(--text-main)]">운동 기록 보기</button>
+                    <button class="flex-1 bg-[var(--bg-sub)] py-1.5 rounded-lg border border-[var(--border-color)] active:scale-95 transition text-[var(--text-main)]">루틴 편집</button>
+                </div>
+            </div>
+
+            <div class="p-4">
+                <h2 class="font-bold text-xl font-sport text-[var(--volt)] mb-4 border-b border-[var(--border-color)] pb-2 flex items-center gap-2">
+                    <i data-lucide="footprints" class="w-6 h-6"></i>
+                    <span>부위별 스트레칭 가이드</span>
+                </h2>
+
+                <div id="stretching-categories" class="space-y-6">
+                    
+                    <div class="bg-[var(--bg-card)] rounded-xl p-4 shadow-lg border border-[var(--border-color)]">
+                        <h3 class="font-bold text-lg text-[var(--text-main)] mb-3 flex items-center gap-2">
+                            <i data-lucide="armchair" class="w-5 h-5"></i> 상체 (어깨, 가슴, 등)
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="bg-[var(--bg-sub)] p-3 rounded-lg shadow-md">
+                                <p class="text-sm font-bold text-[var(--volt)] mb-1">어깨 회전근 스트레칭</p>
+                                <p class="text-xs text-[var(--text-sub)]">
+                                    <span class="font-bold text-white">방법:</span> 한 팔을 앞으로 펴서 반대쪽 어깨 쪽으로 당깁니다. 반대쪽 팔로 당기는 팔의 팔꿈치를 받쳐 몸쪽으로 부드럽게 눌러줍니다. 어깨 근육이 늘어나는 것을 느끼며 15~20초 유지합니다.
+                                </p>
+                            </div>
+                            <div class="bg-[var(--bg-sub)] p-3 rounded-lg shadow-md">
+                                <p class="text-sm font-bold text-[var(--volt)] mb-1">펙 마이너(소흉근) 스트레칭</p>
+                                <p class="text-xs text-[var(--text-sub)]">
+                                    <span class="font-bold text-white">방법:</span> 문틀에 팔꿈치를 90도로 굽혀 붙이고, 한 발을 앞으로 내딛으며 몸을 천천히 문틀 밖으로 밀어줍니다. 가슴 앞쪽이 늘어나는 것을 느끼며 15~20초 유지합니다.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-[var(--bg-card)] rounded-xl p-4 shadow-lg border border-[var(--border-color)]">
+                        <h3 class="font-bold text-lg text-[var(--text-main)] mb-3 flex items-center gap-2">
+                            <i data-lucide="foot" class="w-5 h-5"></i> 하체 (햄스트링, 종아리)
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="bg-[var(--bg-sub)] p-3 rounded-lg shadow-md">
+                                <p class="text-sm font-bold text-[var(--volt)] mb-1">앉아서 햄스트링 스트레칭</p>
+                                <p class="text-xs text-[var(--text-sub)]">
+                                    <span class="font-bold text-white">방법:</span> 바닥에 앉아 한쪽 다리는 펴고, 다른 쪽 다리는 무릎을 굽혀 발바닥을 편 다리의 허벅지 안쪽에 붙입니다. 허리를 곧게 펴고 몸을 편 다리 쪽으로 숙여줍니다. 무리하지 않는 범위에서 15~20초 유지합니다.
+                                </p>
+                            </div>
+                            <div class="bg-[var(--bg-sub)] p-3 rounded-lg shadow-md">
+                                <p class="text-sm font-bold text-[var(--volt)] mb-1">벽 밀기 종아리 스트레칭</p>
+                                <p class="text-xs text-[var(--text-sub)]">
+                                    <span class="font-bold text-white">방법:</span> 벽을 짚고 서서 한쪽 다리를 뒤로 뻗습니다. 뒤로 뻗은 다리의 발뒤꿈치는 바닥에 붙이고 무릎은 쭉 폅니다. 앞쪽 무릎을 굽혀 벽 쪽으로 몸을 숙여 종아리가 늘어나는 것을 느낍니다. 15~20초 유지합니다.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-[var(--bg-card)] rounded-xl p-4 shadow-lg border border-[var(--border-color)]">
+                        <h3 class="font-bold text-lg text-[var(--text-main)] mb-3 flex items-center gap-2">
+                            <i data-lucide="heart" class="w-5 h-5"></i> 코어 (허리, 복부)
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="bg-[var(--bg-sub)] p-3 rounded-lg shadow-md">
+                                <p class="text-sm font-bold text-[var(--volt)] mb-1">무릎 안기 허리 스트레칭</p>
+                                <p class="text-xs text-[var(--text-sub)]">
+                                    <span class="font-bold text-white">방법:</span> 등을 대고 바닥에 눕습니다. 양쪽 무릎을 가슴 쪽으로 당겨 양팔로 안아줍니다. 허리 근육이 부드럽게 이완되는 것을 느끼며 20~30초 유지합니다.
+                                </p>
+                            </div>
+                            <div class="bg-[var(--bg-sub)] p-3 rounded-lg shadow-md">
+                                <p class="text-sm font-bold text-[var(--volt)] mb-1">코브라 스트레칭</p>
+                                <p class="text-xs text-[var(--text-sub)]">
+                                    <span class="font-bold text-white">방법:</span> 배를 대고 바닥에 엎드린 후, 팔꿈치를 어깨 아래에 두고 상체를 세우거나(초보) 팔을 펴서 상체를 들어 올립니다. 골반은 바닥에 붙이고 허리가 늘어나는 것을 느낍니다. 15~20초 유지합니다.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </main>
+        
+    </div>
+
+    <script>
+        // --- ⚙️ 테마 전환 기능 ---
+        function updateThemeIcon(isLight) {
+            const icon = document.getElementById('theme-icon');
+            if (icon) {
+                 if(isLight) {
+                    icon.setAttribute('data-lucide', 'moon'); 
+                 } else {
+                    icon.setAttribute('data-lucide', 'sun-moon'); 
+                 }
+                 lucide.createIcons(); 
+            }
+        }
+        
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const isLight = savedTheme === 'light';
+            if (isLight) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+            updateThemeIcon(isLight);
+        }
+
+        window.toggleTheme = () => {
+            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+            if (isLight) {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'dark');
+                updateThemeIcon(false);
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+                updateThemeIcon(true);
+            }
+        };
+        // ------------------------
+
+        // 페이지 로드시 실행
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTheme();
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
