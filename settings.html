@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -8,13 +9,53 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,700;1,900&family=Inter:wght@400;700;900&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root { --volt: #ccff00; --bg-main: #000000; --bg-card: #111111; --text-main: #ffffff; --text-sub: #9ca3af; --border-color: #262626; }
-        body { font-family: 'Inter', 'Noto Sans KR', sans-serif; background: var(--bg-main); color: var(--text-main); -webkit-font-smoothing: antialiased; }
+        /* --- 1. 기본 테마 (다크 모드) 변수 --- */
+        :root { 
+            --volt:#ccff00; 
+            --bg-main: #000000; 
+            --bg-card: #111111; 
+            --text-main: #ffffff; 
+            --text-sub: #9ca3af; 
+            --border-color: #262626; 
+            --bg-sub: #262626; /* 출석 버튼 배경색 대체용으로 추가 */
+        }
+        
+        /* ⚪ 2. 화이트 모드 디자인 변수 추가 */
+        [data-theme="light"] {
+            --volt:#2563eb; 
+            --bg-main: #f0f4f8;        /* 밝은 배경 */
+            --bg-card: #ffffff;        /* 밝은 카드 배경 */
+            --text-main: #000000;      /* 어두운 메인 텍스트 */
+            --text-sub: #000000;       /* 중간 서브 텍스트 */
+            --border-color: #000000;   /* 밝은 테두리 */
+            --bg-sub: #e5e7eb;         /* 출석 버튼 배경색 대체용으로 추가 */
+        }
+        
+        /* [수정] body에 transition 추가 */
+        body { 
+            font-family: 'Inter', 'Noto Sans KR', sans-serif; 
+            background: var(--bg-main); 
+            color: var(--text-main); 
+            -webkit-font-smoothing: antialiased;
+            transition: background-color 0.3s, color 0.3s; /* 전환 효과 추가 */
+        }
+        
         .font-sport { font-family: 'Chakra Petch', sans-serif; }
         
         .toggle-checkbox:checked { right: 0; border-color: var(--volt); }
         .toggle-checkbox:checked + .toggle-label { background-color: var(--volt); }
-        .input-mini { background: #000; border: 1px solid var(--border-color); color: white; padding: 4px 8px; border-radius: 6px; width: 60px; text-align: center; font-size: 14px; }
+        
+        /* [수정] input-mini 배경 및 색상 변수 사용 */
+        .input-mini { 
+            background: var(--bg-main); 
+            border: 1px solid var(--border-color); 
+            color: var(--text-main); 
+            padding: 4px 8px; 
+            border-radius: 6px; 
+            width: 60px; 
+            text-align: center; 
+            font-size: 14px; 
+        }
         
         /* 페이지 전환용 클래스 (전체화면 오버레이) */
         .full-page-overlay {
@@ -30,15 +71,20 @@
     <div class="w-full max-w-md h-full bg-[var(--bg-main)] flex flex-col relative border-x border-[var(--border-color)] sm:border-x-0 overflow-hidden">
         
         <main class="flex-1 overflow-y-auto pb-24 scrollbar-hide relative w-full p-5">
-            <h2 class="text-2xl font-black italic mb-6 font-sport tracking-tighter">SETTINGS</h2>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-black italic font-sport tracking-tighter">SETTINGS</h2>
+                <button onclick="toggleTheme()" class="text-[var(--text-main)] hover:text-[var(--volt)] transition-colors p-1 rounded-full active:bg-[var(--bg-card)]">
+                    <i id="theme-icon" data-lucide="sun-moon" class="w-6 h-6"></i>
+                </button>
+            </div>
             
             <div class="flex flex-col items-center pt-2 pb-6 border-b border-[var(--border-color)] mb-6">
                 <div class="w-24 h-24 rounded-full p-[2px] bg-gradient-to-tr from-[var(--volt)] to-purple-500 mb-3 relative group">
                     <img id="setting-img" class="w-full h-full rounded-full bg-[var(--bg-card)] object-cover">
                 </div>
                 <h2 id="setting-name" class="text-xl font-bold mb-1">-</h2>
-                <p id="setting-email" class="text-xs text-gray-500">-</p>
-                <p id="setting-phone" class="text-xs text-gray-500 mb-4">-</p>
+                <p id="setting-email" class="text-xs text-[var(--text-sub)]">-</p> 
+                <p id="setting-phone" class="text-xs text-[var(--text-sub)] mb-4">-</p>
                 <button onclick="location.href='profile.html'" class="bg-[var(--bg-card)] px-5 py-2 rounded-full text-xs font-bold border border-[var(--border-color)] hover:border-gray-500 transition">프로필 편집</button>
             </div>
 
@@ -46,7 +92,7 @@
             <div class="bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] p-4 mb-6">
                 <div class="flex justify-between items-center mb-4">
                     <div class="flex flex-col items-center">
-                        <span class="text-xs text-gray-500 mb-1">현재 체중</span>
+                        <span class="text-xs text-[var(--text-sub)] mb-1">현재 체중</span>
                         <div class="flex items-center gap-1">
                             <input type="number" id="input-weight" class="input-mini" placeholder="0">
                             <span class="text-xs">kg</span>
@@ -54,7 +100,7 @@
                     </div>
                     <i data-lucide="arrow-right" class="text-gray-600"></i>
                     <div class="flex flex-col items-center">
-                        <span class="text-xs text-gray-500 mb-1">목표 체중</span>
+                        <span class="text-xs text-[var(--text-sub)] mb-1">목표 체중</span>
                         <div class="flex items-center gap-1">
                             <input type="number" id="input-goal" class="input-mini" placeholder="0">
                             <span class="text-xs">kg</span>
@@ -62,10 +108,10 @@
                     </div>
                     <button onclick="saveWeight()" class="bg-[var(--volt)] text-black text-xs font-bold px-3 py-2 rounded-lg ml-2">저장</button>
                 </div>
-                <div class="bg-black/50 rounded-lg p-3 text-center border border-[var(--border-color)]">
-                    <span class="text-xs text-gray-400">목표까지</span>
+                <div class="bg-[var(--bg-main)]/50 rounded-lg p-3 text-center border border-[var(--border-color)]">
+                    <span class="text-xs text-[var(--text-sub)]">목표까지</span>
                     <span id="weight-diff" class="text-[var(--volt)] font-bold ml-1 text-sm">- kg</span>
-                    <span class="text-xs text-gray-400 ml-1">남았습니다! 🔥</span>
+                    <span class="text-xs text-[var(--text-sub)] ml-1">남았습니다! 🔥</span>
                 </div>
             </div>
 
@@ -78,13 +124,13 @@
                             <i data-lucide="calendar-check" class="text-[var(--volt)] w-4 h-4"></i>
                             매일매일 출석체크
                         </h3>
-                        <p id="attendance-msg" class="text-xs text-gray-500 mt-1">오늘도 러닝하러 오셨군요!</p>
+                        <p id="attendance-msg" class="text-xs text-[var(--text-sub)] mt-1">오늘도 러닝하러 오셨군요!</p>
                     </div>
-                    <button id="btn-attendance" onclick="checkAttendance()" class="bg-[#222] hover:bg-[var(--volt)] hover:text-black transition text-white text-xs font-bold px-4 py-2 rounded-lg border border-[var(--border-color)]">
+                    <button id="btn-attendance" onclick="checkAttendance()" class="bg-[var(--bg-sub)] hover:bg-[var(--volt)] hover:text-black transition text-[var(--text-main)] text-xs font-bold px-4 py-2 rounded-lg border border-[var(--border-color)]">
                         출석하기
                     </button>
                 </div>
-                <div class="mt-3 text-xs text-gray-400">
+                <div class="mt-3 text-xs text-[var(--text-sub)]">
                     누적 출석일: <span id="attendance-count" class="text-white font-bold">0</span>일
                 </div>
             </div>
@@ -93,7 +139,7 @@
             <div class="bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] overflow-hidden mb-8">
                 <div class="w-full flex items-center justify-between p-4 border-b border-[var(--border-color)]">
                     <div class="flex items-center gap-3">
-                        <i data-lucide="bell" class="w-5 h-5 text-gray-400"></i>
+                        <i data-lucide="bell" class="w-5 h-5 text-[var(--text-sub)]"></i>
                         <span class="text-sm">알림 설정</span>
                     </div>
                     <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
@@ -104,7 +150,7 @@
 
                 <button onclick="openPage('privacy')" class="w-full flex items-center justify-between p-4 border-b border-[var(--border-color)] hover:bg-white/5 transition">
                     <div class="flex items-center gap-3">
-                        <i data-lucide="shield" class="w-5 h-5 text-gray-400"></i>
+                        <i data-lucide="shield" class="w-5 h-5 text-[var(--text-sub)]"></i>
                         <span class="text-sm">개인정보 처리방침</span>
                     </div>
                     <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500"></i>
@@ -112,7 +158,7 @@
 
                 <button onclick="openPage('terms')" class="w-full flex items-center justify-between p-4 hover:bg-white/5 transition">
                     <div class="flex items-center gap-3">
-                        <i data-lucide="file-text" class="w-5 h-5 text-gray-400"></i>
+                        <i data-lucide="file-text" class="w-5 h-5 text-[var(--text-sub)]"></i>
                         <span class="text-sm">이용약관</span>
                     </div>
                     <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500"></i>
@@ -120,7 +166,7 @@
             </div>
             
             <button onclick="handleLogout()" class="w-full text-red-500/80 hover:text-red-500 text-sm py-4 font-bold transition">로그아웃</button>
-            <div class="text-center text-[10px] text-gray-700 mt-2">v1.0.3</div>
+            <div class="text-center text-[10px] text-[var(--text-sub)]/50 mt-2">v1.0.3</div>
         </main>
 
         <nav class="w-full bg-[var(--bg-main)] border-t border-[var(--border-color)] px-2 py-4 flex justify-between items-end pb-8 z-30 relative">
@@ -152,20 +198,20 @@
                 <button onclick="closePage('privacy')"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
                 <h2 class="font-bold text-lg">개인정보 처리방침</h2>
             </div>
-            <div class="flex-1 overflow-y-auto p-5 text-sm text-gray-300 leading-relaxed space-y-4 pb-10">
-                <p class="font-bold text-white">제1조 (목적)</p>
+            <div class="flex-1 overflow-y-auto p-5 text-sm text-black-300 leading-relaxed space-y-4 pb-10">
+                <p class="font-bold text-black">제1조 (목적)</p>
                 <p>POKE RUN(이하 '회사')은 회원의 개인정보를 중요시하며, "정보통신망 이용촉진 및 정보보호"에 관한 법률을 준수하고 있습니다.</p>
                 
-                <p class="font-bold text-white">제2조 (수집하는 개인정보 항목)</p>
+                <p class="font-bold text-black">제2조 (수집하는 개인정보 항목)</p>
                 <p>회사는 서비스 제공을 위해 아래와 같은 개인정보를 수집하고 있습니다.<br>
                 - 필수항목: 이메일, 닉네임, 비밀번호, 프로필 사진<br>
                 - 선택항목: 신체정보(체중), 운동 기록</p>
                 
-                <p class="font-bold text-white">제3조 (개인정보의 보유 및 이용기간)</p>
+                <p class="font-bold text-black">제3조 (개인정보의 보유 및 이용기간)</p>
                 <p>회사는 원칙적으로 개인정보 수집 및 이용목적이 달성된 후에는 해당 정보를 지체 없이 파기합니다. 단, 관계법령의 규정에 의하여 보존할 필요가 있는 경우 회사는 아래와 같이 관계법령에서 정한 일정한 기간 동안 회원정보를 보관합니다.<br>
                 - 접속 로그 등 서비스 이용 기록: 3개월</p>
 
-                <p class="font-bold text-white">제4조 (이용자의 권리)</p>
+                <p class="font-bold text-black">제4조 (이용자의 권리)</p>
                 <p>이용자는 언제든지 등록되어 있는 자신의 개인정보를 조회하거나 수정할 수 있으며 가입해지를 요청할 수 있습니다.</p>
             </div>
         </div>
@@ -175,20 +221,20 @@
                 <button onclick="closePage('terms')"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
                 <h2 class="font-bold text-lg">이용약관</h2>
             </div>
-            <div class="flex-1 overflow-y-auto p-5 text-sm text-gray-300 leading-relaxed space-y-4 pb-10">
-                <p class="font-bold text-white">제1조 (목적)</p>
+            <div class="flex-1 overflow-y-auto p-5 text-sm text-black-300 leading-relaxed space-y-4 pb-10">
+                <p class="font-bold text-black">제1조 (목적)</p>
                 <p>이 약관은 POKE RUN이 제공하는 운동 기록 및 소셜 네트워크 서비스(이하 '서비스')의 이용조건 및 절차, 이용자와 회사의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.</p>
                 
-                <p class="font-bold text-white">제2조 (계정 관리의 의무)</p>
+                <p class="font-bold text-black">제2조 (계정 관리의 의무)</p>
                 <p>회원의 ID와 비밀번호에 관한 관리책임은 회원에게 있으며, 이를 제3자가 이용하도록 하여서는 안 됩니다. 회사는 회원의 귀책사유로 인한 서비스 이용의 장애에 대하여 책임을 지지 않습니다.</p>
                 
-                <p class="font-bold text-white">제3조 (서비스 이용 제한)</p>
+                <p class="font-bold text-black">제3조 (서비스 이용 제한)</p>
                 <p>회사는 회원이 다음 각 호에 해당하는 행위를 하였을 경우 사전 통지 없이 이용 계약을 해지하거나 또는 기간을 정하여 서비스 이용을 중지할 수 있습니다.<br>
                 1. 타인의 명의를 도용한 경우<br>
                 2. 공공질서 및 미풍양속에 저해되는 내용을 고의로 유포시킨 경우<br>
                 3. 타인의 명예를 손상시키거나 불이익을 주는 행위를 한 경우</p>
 
-                <p class="font-bold text-white">제4조 (책임의 한계)</p>
+                <p class="font-bold text-black">제4조 (책임의 한계)</p>
                 <p>회사는 무료로 제공되는 서비스 이용과 관련하여 관련법에 특별한 규정이 없는 한 책임을 지지 않습니다.</p>
             </div>
         </div>
@@ -211,6 +257,43 @@
         const auth = getAuth(app);
         const db = getDatabase(app);
         let currentUser = null;
+        
+        // --- ⚙️ 테마 전환 기능 (추가) ---
+        function updateThemeIcon(isLight) {
+            const icon = document.getElementById('theme-icon');
+            if (icon) {
+                 if(isLight) {
+                    icon.setAttribute('data-lucide', 'moon'); // 화이트 모드일 때 달 아이콘
+                 } else {
+                    icon.setAttribute('data-lucide', 'sun-moon'); // 다크 모드일 때 해/달 아이콘
+                 }
+                 lucide.createIcons(); 
+            }
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const isLight = savedTheme === 'light';
+            if (isLight) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+            updateThemeIcon(isLight);
+        }
+
+        window.toggleTheme = () => {
+            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+            if (isLight) {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'dark');
+                updateThemeIcon(false);
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+                updateThemeIcon(true);
+            }
+        };
+        // ----------------------------------------------------
+
 
         onAuthStateChanged(auth, async (user) => {
             if(user) {
@@ -240,17 +323,20 @@
                         if(data.lastAttendanceDate === today) {
                             btn.innerText = "완료";
                             btn.disabled = true;
-                            btn.classList.add('bg-gray-700', 'text-gray-400');
+                            // [수정] hardcoded classes to use variables for theme consistency
+                            btn.classList.add('bg-[var(--bg-sub)]', 'text-[var(--text-sub)]'); 
                             btn.classList.remove('bg-[#222]', 'text-white', 'hover:bg-[var(--volt)]');
                             msg.innerText = "오늘 출석을 완료했습니다! 🎉";
                             msg.style.color = "var(--volt)";
                         } else {
                             btn.innerText = "출석하기";
                             btn.disabled = false;
+                            // [수정] hardcoded classes to use variables for theme consistency
                             btn.classList.remove('bg-gray-700', 'text-gray-400');
-                            btn.classList.add('bg-[#222]', 'text-white');
+                            btn.classList.add('bg-[var(--bg-sub)]', 'text-[var(--text-main)]', 'hover:bg-[var(--volt)]', 'hover:text-black');
                             msg.innerText = "오늘도 힘차게 달려볼까요?";
-                            msg.style.color = "#6b7280";
+                            // [수정] hardcoded color to use variable for theme consistency
+                            msg.style.color = "var(--text-sub)"; 
                         }
                     }
                 });
@@ -327,6 +413,10 @@
         };
 
         window.handleLogout = () => signOut(auth).then(() => location.href='home.html');
+
+        // ⭐️ 페이지 로드 시 테마 적용 (추가)
+        document.addEventListener('DOMContentLoaded', loadTheme);
+
         lucide.createIcons();
     </script>
 </body>
