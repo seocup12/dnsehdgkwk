@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>POKÉMON RUN: WEIGHT PROFILE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,700;1,900&family=Inter:wght@400;700;900&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* --- 1. 기본 테마 (다크 모드) 변수 --- */
+        :root { 
+            --volt: #ccff00; 
+            --bg-main: #000000; 
+            --bg-card: #111111; 
+            --bg-sub: #222222; 
+            --text-main: #ffffff; 
+            --text-sub: #9ca3af; 
+            --border-color: #262626; 
+        }
+        
+        /* ⚪ 2. 화이트 모드 디자인 변수 적용 */
+        [data-theme="light"] {
+            --volt: #f97316;       /* 주황색/골드 */   
+            --bg-main: #f0f4f8;       
+            --bg-card: #ffffff;       
+            --bg-sub: #e5e7eb;        
+            --text-main: #1a1a1a;     
+            --text-sub: #4b5563;      
+            --border-color: #cccccc;  
+        }
+
+        /* ... 나머지 CSS 스타일은 pokemon_profile.html과 동일 ... */
+    </style>
+</head>
+<body class="flex justify-center h-screen bg-[var(--bg-main)]">
+
+    <div class="w-full max-w-md h-full relative bg-[var(--bg-main)] flex flex-col shadow-2xl border-x border-[var(--border-color)] sm:border-x-0">
+        
+        <main class="flex-1 overflow-y-auto pb-20 scrollbar-hide">
+            
+            <div class="px-4 pt-14 pb-6">
+                <div class="flex items-center justify-between mb-8">
+                    <div class="relative group cursor-pointer" onclick="openEditProfileModal()">
+                        <div class="w-24 h-24 rounded-full p-1 bg-[var(--bg-card)] border-4 border-[var(--volt)] shadow-xl flex items-center justify-center">
+                            <img id="my-profile-img" class="w-full h-full rounded-full border-2 border-[var(--bg-main)] object-cover bg-[var(--bg-card)]">
+                        </div>
+                        <div class="absolute bottom-0 right-0 bg-[var(--volt)] text-black rounded-full p-1.5 border-2 border-[var(--bg-main)] shadow-lg">
+                            <i data-lucide="barbell" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 flex justify-around text-[var(--text-main)] ml-4 border border-[var(--border-color)] p-2 rounded-xl bg-[var(--bg-sub)]">
+                        <div class="flex flex-col items-center">
+                            <span id="post-count" class="font-bold text-lg text-[var(--volt)]">0</span>
+                            <span class="text-xs text-[var(--text-sub)]">운동 기록</span> </div>
+                        <button onclick="openUserListModal('followers')" class="flex flex-col items-center hover:bg-white/5 rounded-lg p-1 transition active:scale-95">
+                            <span id="follower-count" class="font-bold text-lg">0</span>
+                            <span class="text-xs text-[var(--text-sub)]">파트너</span> </button>
+                        <button onclick="openUserListModal('following')" class="flex flex-col items-center hover:bg-white/5 rounded-lg p-1 transition active:scale-95">
+                            <span id="following-count" class="font-bold text-lg">0</span>
+                            <span class="text-xs text-[var(--text-sub)]">팔로잉</span> </button>
+                    </div>
+                </div>
+                
+                <div class="mb-5">
+                    <h3 id="my-profile-name" class="font-bold text-xl font-sport text-[var(--volt)]">IRON MASTER</h3>
+                    <p id="my-profile-bio" class="text-sm text-[var(--text-sub)] mt-1">오늘도 쇠질 완료! 3대 500을 향하여!</p>
+                </div>
+                
+                <div class="flex gap-2 text-sm font-bold">
+                    <button onclick="openEditProfileModal()" class="flex-1 bg-[var(--bg-sub)] py-1.5 rounded-lg border border-[var(--border-color)] active:scale-95 transition text-[var(--text-main)]">프로필 편집</button>
+                    <button class="flex-1 bg-[var(--bg-sub)] py-1.5 rounded-lg border border-[var(--border-color)] active:scale-95 transition text-[var(--text-main)]">루틴 공유</button>
+                </div>
+            </div>
+            
+            </main>
+    </div>
+    </body>
+</html>

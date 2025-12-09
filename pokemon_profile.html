@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>POKÉ RUN: POKÉMON PROFILE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,700;1,900&family=Inter:wght@400;0,700;0,900&family=Noto+Sans+KR:wght@400;0,700;0,900&display=swap" rel="stylesheet">
+    <style>
+        /* --- 1. 기본 테마 (다크 모드, BLACK) 변수 --- */
+        :root { 
+            --volt: #ccff00; 
+            --bg-main: #000000; 
+            --bg-card: #111111; 
+            --bg-sub: #222222; 
+            --text-main: #ffffff; 
+            --text-sub: #9ca3af; 
+            --border-color: #262626; 
+        }
+        
+        /* ⚪ 2. 화이트 모드 디자인 변수 적용 (WHITE) */
+        .white-mode {
+            --volt: #2563eb; /* 블루 */
+            --bg-main: #ffffff;
+            --bg-card: #f3f4f6;
+            --bg-sub: #e5e7eb;
+            --text-main: #1f2937;
+            --text-sub: #6b7280;
+            --border-color: #d1d5db;
+        }
+
+        /* 3. 폰트 및 공통 스타일 */
+        .font-sport { font-family: 'Chakra Petch', sans-serif; }
+        body { 
+            background-color: var(--bg-main); 
+            color: var(--text-main); 
+            font-family: 'Noto Sans KR', sans-serif; 
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* 로딩 스피너 애니메이션 */
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .spinner { animation: spin 1s linear infinite; }
+
+        /* 4. Tab 버튼 공통 스타일 정의 */
+        .tab-btn-base {
+            flex: 1;
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+            display: flex;
+            justify-content: center;
+            align-items: center; 
+            transition: border-color 0.3s, color 0.3s;
+            cursor: pointer;
+        }
+        
+        /* ⭐️ 도감 모달 스타일 */
+        #pokedex-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-main);
+            z-index: 50;
+            transform: translateY(100%);
+            transition: transform 0.4s ease-out;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #pokedex-modal.open {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="bg-[var(--bg-main)] min-h-screen pb-16">
+    
+    <div id="loading-overlay" class="fixed inset-0 bg-[var(--bg-main)] flex flex-col justify-center items-center z-50 transition-opacity duration-300">
+        <i data-lucide="zap" class="w-10 h-10 text-[var(--volt)] spinner"></i>
+        <p class="mt-4 text-[var(--text-sub)] text-sm">포켓몬 프로필 로드 중...</p>
+    </div>
+
+    <header class="sticky top-0 z-10 p-4 border-b border-[var(--border-color)] bg-[var(--bg-main)] transition-colors">
+        <div class="max-w-xl mx-auto flex justify-between items-center">
+            <h1 class="font-bold text-xl font-sport flex items-center gap-1">
+                <i data-lucide="zap" class="w-6 h-6 text-[var(--volt)]"></i>
+                <span class="text-[var(--text-main)]">POKÉ</span><span class="text-[var(--volt)]">RUN</span>
+            </h1>
+            <button onclick="toggleTheme()" class="p-1 rounded-full hover:bg-[var(--bg-sub)] active:scale-95 transition-all text-[var(--text-main)]">
+                <i data-lucide="sun-moon" class="w-6 h-6"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-xl mx-auto container">
+        <div id="profile-content" class="p-4 pt-10 opacity-0 transition-opacity duration-500">
+            <div class="flex items-start justify-between mb-5">
+                <div class="flex items-center">
+                    <img id="my-profile-image" src="https://via.placeholder.com/80x80?text=P" alt="포켓몬 이미지" class="w-20 h-20 rounded-full border-2 border-[var(--volt)] object-cover bg-[var(--bg-sub)]">
+                    
+                    <div class="ml-4">
+                        <h3 id="my-profile-name" class="font-bold text-2xl font-sport text-[var(--volt)]">포켓몬 이름</h3>
+                        <p id="my-profile-bio" class="text-sm text-[var(--text-sub)] mt-1">종족 / 타입</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-3 text-center text-sm mb-6 border-y border-[var(--border-color)] py-3">
+                <div class="flex flex-col">
+                    <span id="pokemon-level" class="text-xl font-bold font-sport text-[var(--volt)]">0</span>
+                    <span class="text-xs text-[var(--text-sub)]">LEVEL</span>
+                </div>
+                <div class="flex flex-col">
+                    <span id="hp-stat" class="text-xl font-bold font-sport text-[var(--text-main)]">0</span>
+                    <span class="text-xs text-[var(--text-sub)]">HP</span>
+                </div>
+                <div class="flex flex-col">
+                    <span id="attack-stat" class="text-xl font-bold font-sport text-[var(--text-main)]">0</span>
+                    <span class="text-xs text-[var(--text-sub)]">ATK</span>
+                </div>
+            </div>
+
+            <div class="flex gap-2 text-sm font-bold">
+                <button onclick="openPokedex()" class="flex-1 bg-[var(--bg-sub)] py-1.5 rounded-lg border border-[var(--border-color)] active:scale-95 transition text-[var(--text-main)] flex items-center justify-center gap-1">
+                    <i data-lucide="book-open" class="w-4 h-4"></i>
+                    <span>나의 도감</span>
+                </button>
+                
+                <button onclick="loadMyPokemonStatsSummary()" class="flex-1 bg-[var(--bg-sub)] py-1.5 rounded-lg border border-[var(--border-color)] active:scale-95 transition text-[var(--text-main)] flex items-center justify-center gap-1">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                    <span>능력 확인</span> 
+                </button>
+            </div>
+            
+            <div class="flex border-b border-[var(--border-color)] mt-8 text-sm font-bold">
+                <div id="tab-btn-posts" class="tab-btn-base border-b-2 border-[var(--text-main)] text-[var(--text-main)]" onclick="switchTab('posts')">
+                    <i data-lucide="sword" class="w-5 h-5"></i><span class="ml-1">전적</span>
+                </div>
+                <div id="tab-btn-reels" class="tab-btn-base text-[var(--text-sub)]" onclick="switchTab('reels')">
+                    <i data-lucide="film" class="w-5 h-5"></i><span class="ml-1">리포트</span>
+                </div>
+                <div id="tab-btn-tags" class="tab-btn-base text-[var(--text-sub)]" onclick="switchTab('tags')">
+                    <i data-lucide="bookmark" class="w-5 h-5"></i><span class="ml-1">태그</span>
+                </div>
+            </div>
+
+            <div id="tab-content-posts" class="tab-content active pt-6">
+                <h4 class="text-lg font-bold font-sport text-[var(--volt)] mb-4 pb-2">누적 대전 기록</h4>
+                
+                <div class="grid grid-cols-3 gap-3 text-center">
+                    <div class="bg-[var(--bg-sub)] p-4 rounded-xl shadow-lg">
+                        <span id="win-count-total" class="font-bold text-4xl font-sport text-green-400">0</span>
+                        <span class="text-xs text-[var(--text-sub)] block mt-1">WIN (승)</span>
+                    </div>
+                    <div class="bg-[var(--bg-sub)] p-4 rounded-xl shadow-lg">
+                        <span id="lose-count-total" class="font-bold text-4xl font-sport text-red-400">0</span>
+                        <span class="text-xs text-[var(--text-sub)] block mt-1">LOSE (패)</span>
+                    </div>
+                    <div class="bg-[var(--bg-sub)] p-4 rounded-xl shadow-lg">
+                        <span id="draw-count-total" class="font-bold text-4xl font-sport text-yellow-400">0</span>
+                        <span class="text-xs text-[var(--text-sub)] block mt-1">DRAW (무)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-content-reels" class="tab-content pt-4">
+                <p class="col-span-3 text-center text-[var(--text-sub)] mt-10">리포트 내용이 없습니다.</p>
+            </div>
+            <div id="tab-content-tags" class="tab-content pt-4">
+                <p class="col-span-3 text-center text-[var(--text-sub)] mt-10">태그된 게시물이 없습니다.</p>
+            </div>
+        </div>
+    </main>
+    
+    <nav class="fixed bottom-0 left-0 right-0 max-w-xl mx-auto bg-[var(--bg-main)] border-t border-[var(--border-color)] z-20 transition-colors">
+        <div class="flex justify-around items-center h-16">
+            <a href="log.html" class="nav-item">
+                <i data-lucide="home" class="w-6 h-6 text-[var(--text-sub)]"></i>
+            </a>
+            <a href="reels.html" class="nav-item">
+                <i data-lucide="clapperboard" class="w-6 h-6 text-[var(--text-sub)]"></i>
+            </a>
+            <a href="#" class="nav-item">
+                <i data-lucide="sparkles" class="w-6 h-6 text-[var(--volt)]"></i>
+            </a>
+            <a href="message.html" class="nav-item">
+                <i data-lucide="message-square" class="w-6 h-6 text-[var(--text-sub)]"></i>
+            </a>
+            <a href="profile.html" class="nav-item">
+                <i data-lucide="user" class="w-6 h-6 text-[var(--text-sub)]"></i>
+            </a>
+        </div>
+    </nav>
+    
+    <div id="pokedex-modal">
+        <header class="p-4 border-b border-[var(--border-color)] bg-[var(--bg-main)] flex items-center justify-between">
+            <h2 class="font-bold text-xl font-sport text-[var(--volt)]">나의 도감</h2>
+            <button onclick="closePokedex()" class="p-2 rounded-full hover:bg-[var(--bg-sub)] active:scale-95 transition">
+                <i data-lucide="x" class="w-6 h-6 text-[var(--text-main)]"></i>
+            </button>
+        </header>
+        
+        <div class="flex-1 overflow-y-auto p-4 max-w-xl mx-auto w-full">
+            <h3 class="text-sm text-[var(--text-sub)] mb-4">보유 중인 포켓몬 목록 (<span id="pokedex-count">0</span>마리)</h3>
+            <div id="pokemon-list" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <p id="pokedex-loading-message" class="col-span-2 sm:col-span-3 text-center text-[var(--text-sub)] mt-10">포켓몬 로드 중...</p>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-database-compat.js"></script>
+    
+    <script>
+        // 🚨🚨🚨 사용자님의 Firebase 프로젝트 설정 🚨🚨🚨
+        // 이 부분을 사용자님의 정확한 값으로 교체했는지 **반드시** 다시 한번 확인해주세요.
+        const firebaseConfig = {
+             apiKey: "AIzaSyAbHwLLXIH8rBQ8gNMVqE5SE208aIbfFZ0",
+             authDomain: "pokbattle.firebaseapp.com",
+             databaseURL: "https://pokbattle-default-rtdb.firebaseio.com",
+             projectId: "pokbattle",
+             storageBucket: "pokbattle.firebasestorage.app",
+             messagingSenderId: "445300582484",
+             appId: "1:445300582484:web:f8f1373a3bbf643face5c1"
+        };
+
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+        
+        let currentPokemonId = null; 
+
+        // 포켓몬 등급을 결정하는 함수 (스탯 총합 기준)
+        function determineGrade(stats) {
+            const total = (stats.hp || 0) + (stats.attack || 0); // HP와 ATK만 합산
+            let text, color;
+
+            if (total >= 250) { text = 'S+'; color = 'text-red-500'; }
+            else if (total >= 230) { text = 'S'; color = 'text-red-400'; }
+            else if (total >= 200) { text = 'A'; color = 'text-yellow-500'; }
+            else if (total >= 180) { text = 'B'; color = 'text-green-500'; }
+            else { text = 'C'; color = 'text-blue-500'; }
+            
+            return { text, color, total };
+        }
+
+        // UI 업데이트를 통합하는 헬퍼 함수 (프로필)
+        function updateUI(data) {
+            document.getElementById('my-profile-image').src = data.photoURL || (data.pokeId ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${data.pokeId}.png` : 'https://via.placeholder.com/80x80?text=P');
+            document.getElementById('my-profile-name').innerText = data.nickname || data.species || "이름 없음";
+            document.getElementById('my-profile-bio').innerText = `${data.species || 'Unknown'} 포켓몬 | 타입: ${data.type || 'Normal'}`;
+
+            document.getElementById('pokemon-level').innerText = data.level || 1;
+            document.getElementById('hp-stat').innerText = data.stats.hp || 0;
+            document.getElementById('attack-stat').innerText = data.stats.attack || 0;
+            
+            // 전적 탭에 데이터 업데이트
+            document.getElementById('win-count-total').innerText = data.battle.wins || 0;
+            document.getElementById('lose-count-total').innerText = data.battle.loses || 0;
+            document.getElementById('draw-count-total').innerText = data.battle.draws || 0;
+        }
+
+        // ===============================================
+        // 1. 핵심 기능: 포켓몬 프로필 데이터 로드 (오류 보고 강화 버전)
+        // ===============================================
+        window.loadPokemonProfile = async (pokemonId) => {
+            const profileContent = document.getElementById('profile-content');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const myProfileName = document.getElementById('my-profile-name');
+            const myProfileBio = document.getElementById('my-profile-bio');
+            
+            loadingOverlay.classList.remove('opacity-0', 'hidden'); 
+            profileContent.classList.remove('opacity-100'); 
+
+            if (!pokemonId || pokemonId === 'dummy_test') {
+                // 더미 데이터 로드 (ID 누락 시 또는 테스트용)
+                const dummyData = {
+                    nickname: "⚡️ 피카츄 (테스트)",
+                    species: "전기쥐 포켓몬",
+                    type: "전기",
+                    pokeId: 25, 
+                    level: 99,
+                    stats: { hp: 120, attack: 150 },
+                    battle: { wins: 30, loses: 10, draws: 5 }, 
+                    photoURL: null 
+                };
+                updateUI(dummyData);
+                currentPokemonId = 'dummy_test'; 
+            } else {
+                // ⭐️ 실제 Firebase 데이터 로드 (단일 프로필) ⭐️
+                try {
+                    const snap = await db.ref(`pokemon_profiles/${pokemonId}`).once('value');
+                    
+                    if (snap.exists()) {
+                        updateUI(snap.val());
+                    } else {
+                        myProfileName.innerText = "⚠️ 데이터 없음";
+                        myProfileBio.innerText = `ID: ${pokemonId} 에 해당하는 데이터가 없습니다.`;
+                    }
+                    currentPokemonId = pokemonId; 
+
+                } catch (error) {
+                    console.error("🔥 포켓몬 프로필 로드 실패:", error);
+                    myProfileName.innerText = "❌ 로드 오류";
+                    myProfileBio.innerText = `Firebase 연결 오류: ${error.code || 'UNKNOWN'}`;
+                    alert(`Firebase 프로필 로드 오류 발생: ${error.code || 'UNKNOWN'}\n\n데이터 로드에 실패했습니다. 다음을 확인하세요:\n1. Firebase Config 값\n2. Database Rules 확인`);
+                }
+            }
+            
+            // 로딩 종료
+            loadingOverlay.classList.add('opacity-0');
+            setTimeout(() => loadingOverlay.classList.add('hidden'), 300);
+            profileContent.classList.add('opacity-100');
+            lucide.createIcons();
+        };
+
+
+        // ===============================================
+        // 2. 신규 기능: 도감 연동 및 능력치 설명 (오류 보고 강화 버전)
+        // ===============================================
+
+        // 포켓몬 카드 생성 템플릿
+        function createPokemonCard(id, data) {
+            const stats = data.stats || {};
+            const grade = determineGrade(stats);
+            const spriteUrl = data.pokeId ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${data.pokeId}.png` : 'https://via.placeholder.com/80x80?text=P';
+            
+            const movesList = (data.moves || []).slice(0, 3).map(move => `<span class="text-xs text-[var(--text-sub)] bg-[var(--bg-sub)] px-1.5 py-0.5 rounded-full">${move}</span>`).join('');
+
+            return `
+                <div onclick="selectPokemon('${id}')" 
+                     class="bg-[var(--bg-card)] p-3 rounded-xl border border-[var(--border-color)] shadow-xl hover:shadow-[0_0_15px_0_rgba(204,255,0,0.2)] transition duration-200 cursor-pointer">
+                    <div class="text-right mb-2">
+                        <span class="font-bold text-lg font-sport ${grade.color}">${grade.text}</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <img src="${spriteUrl}" alt="${data.species}" class="w-24 h-24 object-contain mb-2">
+                        <h4 class="font-bold text-base text-[var(--text-main)]">${data.nickname || data.species}</h4>
+                        <p class="text-xs text-[var(--text-sub)] mb-3">Lv.${data.level || 1}</p>
+                        <div class="flex gap-3 text-sm mb-3">
+                            <div><i data-lucide="heart" class="w-3 h-3 inline-block text-red-400 mr-1"></i>HP: <span class="font-bold">${stats.hp || 0}</span></div>
+                            <div><i data-lucide="swords" class="w-3 h-3 inline-block text-orange-400 mr-1"></i>ATK: <span class="font-bold">${stats.attack || 0}</span></div>
+                        </div>
+                        <div class="flex flex-wrap justify-center gap-1.5 min-h-[30px] w-full mt-1">
+                            ${movesList || '<span class="text-xs text-[var(--text-sub)]">등록된 기술 없음</span>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // [도감 연동 기능] 도감에서 포켓몬을 선택하여 메인 프로필 업데이트 및 연결
+        window.selectPokemon = (pokemonId) => {
+            if (!pokemonId) return;
+            document.body.classList.remove('white-mode');
+            localStorage.setItem('theme', 'dark');
+            
+            currentPokemonId = pokemonId; 
+            loadPokemonProfile(pokemonId);
+            closePokedex();
+            
+            const newUrl = `${window.location.pathname}?id=${pokemonId}`;
+            window.history.pushState({ path: newUrl }, '', newUrl);
+            
+            document.getElementById('profile-content').scrollIntoView({ behavior: 'smooth' });
+            lucide.createIcons();
+        };
+
+
+        // [보유 포켓몬 능력치 설명 기능]
+        window.loadMyPokemonStatsSummary = async () => {
+            try {
+                const snapshot = await db.ref('pokemon_profiles').once('value');
+                const pokemonData = snapshot.val();
+                let summary = "===================================\n";
+                summary += "           ⭐️ 보유 포켓몬 능력치 요약 ⭐️\n";
+                summary += "===================================\n";
+                let count = 0;
+
+                if (pokemonData) {
+                    Object.entries(pokemonData).forEach(([id, data]) => {
+                        const stats = data.stats || {};
+                        const grade = determineGrade(stats);
+                        
+                        summary += `\n[${data.nickname || data.species}]\n`;
+                        summary += `  - 등급: ${grade.text} (총합: ${grade.total})\n`;
+                        summary += `  - HP: ${stats.hp || 0}, ATK: ${stats.attack || 0}\n`;
+                        count++;
+                    });
+                }
+                
+                if (count === 0) {
+                    summary += "\n보유한 포켓몬이 없습니다. 도감을 채워주세요!";
+                } else {
+                    summary += `\n===================================\n총 ${count}마리 보유 중입니다.`;
+                }
+
+                alert(summary); 
+                
+            } catch (error) {
+                console.error("🔥 능력치 요약 로드 실패:", error);
+                alert(`능력치 정보를 불러오는 중 오류가 발생했습니다: ${error.code || 'UNKNOWN'}\n\n[1단계] Firebase Config 값 확인\n[2단계] Database Rules 확인`);
+            }
+        };
+
+
+        // [나의 도감 목록 로드] 도감 모달에 카드 리스트 로드 (오류 보고 강화 버전)
+        window.loadMyPokemonList = async () => {
+            const listContainer = document.getElementById('pokemon-list');
+            const loadingMessage = document.getElementById('pokedex-loading-message');
+            const countElement = document.getElementById('pokedex-count');
+            
+            listContainer.innerHTML = ''; 
+            loadingMessage.style.display = 'block';
+            loadingMessage.innerHTML = '포켓몬 로드 중...'; 
+
+            try {
+                // ⭐️ pokemon_profiles 전체 데이터 로드 ⭐️
+                const snapshot = await db.ref('pokemon_profiles').once('value');
+                const pokemonData = snapshot.val();
+                let cardHtml = '';
+                let count = 0;
+
+                if (pokemonData) {
+                    Object.entries(pokemonData).forEach(([id, data]) => {
+                        cardHtml += createPokemonCard(id, data);
+                        count++;
+                    });
+                }
+                
+                loadingMessage.style.display = 'none';
+                
+                // 데이터가 없으면 '데이터 없음' 메시지를 표시합니다.
+                listContainer.innerHTML = cardHtml || '<p class="col-span-2 sm:col-span-3 text-center text-[var(--text-sub)] mt-10">보유한 포켓몬이 없습니다. (Firebase Realtime Database의 **pokemon_profiles** 경로에 데이터가 비어 있습니다.)</p>';
+                
+                countElement.innerText = count;
+                lucide.createIcons();
+                console.log("✅ Firebase 로드 성공: 데이터 수:", count);
+                
+            } catch (error) {
+                // ❌ 오류 발생 시 상세 보고 (가장 중요한 부분!)
+                console.error("🔥 도감 로드 실패 (Firebase Error):", error.message);
+                
+                const errorMessage = `🔥 Firebase 오류 발생: ${error.code || 'UNKNOWN'}\n\n데이터 로드에 실패했습니다. 다음을 확인하세요:\n1. Firebase Config 값 확인\n2. Realtime Database의 규칙 설정 (PERMISSION_DENIED 가능성 높음)`;
+                
+                loadingMessage.style.display = 'block';
+                loadingMessage.innerHTML = `<span class="text-red-400 font-bold">${errorMessage.replace(/\n/g, '<br>')}</span>`;
+                listContainer.innerHTML = '';
+                countElement.innerText = '0';
+                alert(errorMessage); 
+            }
+        };
+
+
+        // '나의 도감' 버튼 클릭 시 모달 열기 및 목록 로드
+        window.openPokedex = () => {
+            document.getElementById('pokedex-modal').classList.add('open');
+            document.body.style.overflow = 'hidden'; 
+            loadMyPokemonList();
+        };
+
+        // 도감 닫기
+        window.closePokedex = () => {
+            document.getElementById('pokedex-modal').classList.remove('open');
+            document.body.style.overflow = '';
+        };
+        
+        // ===============================================
+        // 3. UI 공통 기능 (테마, 탭)
+        // ===============================================
+        
+        window.loadTheme = () => {
+            if (localStorage.getItem('theme') === 'white') {
+                document.body.classList.add('white-mode');
+            }
+        };
+
+        window.toggleTheme = () => {
+            document.body.classList.toggle('white-mode');
+            localStorage.setItem('theme', document.body.classList.contains('white-mode') ? 'white' : 'dark');
+            lucide.createIcons(); 
+        };
+
+        window.switchTab = (tabName) => {
+            const tabs = ['posts', 'reels', 'tags'];
+            const tabBaseClass = "tab-btn-base";
+            const tabActiveClass = "border-b-2 border-[var(--text-main)] text-[var(--text-main)]";
+            const tabInactiveClass = "text-[var(--text-sub)]";
+
+            tabs.forEach(t => {
+                const content = document.getElementById(`tab-content-${t}`);
+                const btn = document.getElementById(`tab-btn-${t}`);
+
+                content.classList.remove('active');
+                
+                btn.className = tabBaseClass;
+
+                if (t === tabName) {
+                    content.classList.add('active');
+                    btn.classList.add(...tabActiveClass.split(' '));
+                } else {
+                    btn.classList.add(...tabInactiveClass.split(' '));
+                }
+            });
+            lucide.createIcons(); 
+        };
+
+        // 페이지 로드시 실행
+        window.onload = () => {
+            loadTheme();
+            const urlParams = new URLSearchParams(window.location.search);
+            currentPokemonId = urlParams.get('id'); 
+
+            // ID가 없으면 'dummy_test'로 로드 (테스트용)
+            loadPokemonProfile(currentPokemonId || 'dummy_test'); 
+            switchTab('posts'); // '전적' 탭 기본 활성화
+        };
+    </script>
+</body>
+</html>
