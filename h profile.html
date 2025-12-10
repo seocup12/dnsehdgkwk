@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -10,13 +11,13 @@
     <style>
         /* --- 1. 기본 테마 (다크 모드) 변수 --- */
         :root { 
-            --volt: #ccff00; /* 메인 강조색 */
-            --bg-main: #000000; /* 메인 배경색 */
-            --bg-card: #111111; /* 카드 배경색 */
-            --bg-sub: #222222; /* 서브 배경/버튼 색상 */
-            --text-main: #ffffff; 
-            --text-sub: #9ca3af; 
-            --border-color: #262626; 
+            --volt: #2563eb;          
+            --bg-main: #f0f4f8;       
+            --bg-card: #ffffff;       
+            --bg-sub: #e5e7eb;        
+            --text-main: #1a1a1a;     
+            --text-sub: #4b5563;      
+            --border-color: #cccccc;  
         }
         
         /* ⚪ 2. 화이트 모드 디자인 변수 적용 */
@@ -82,10 +83,7 @@
 </head>
 <body class="flex justify-center h-screen bg-[var(--bg-main)]">
 
-    <button onclick="closeCurrentProfile()" 
-            class="fixed top-4 right-4 z-[9001] p-2 bg-[var(--volt)] text-black rounded-full shadow-lg transition active:scale-90">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-    </button>
+    
 
     <div class="w-full max-w-md h-full relative bg-[var(--bg-main)] flex flex-col shadow-2xl border-x border-[var(--border-color)] sm:border-x-0">
         

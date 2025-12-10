@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>POKÉ RUN: POKÉMON PROFILE</title>
+    <title>POKÉ RUN: BATTLE RECORDS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,700;1,900&family=Inter:wght@400;0,700;0,900&family=Noto+Sans+KR:wght@400;0,700;0,900&display=swap" rel="stylesheet">
     <style>
         /* --- 1. 기본 테마 (다크 모드, BLACK) 변수 --- */
         :root { 
-            --volt: #ccff00; 
-            --bg-main: #000000; 
-            --bg-card: #111111; 
-            --bg-sub: #222222; 
-            --text-main: #ffffff; 
-            --text-sub: #9ca3af; 
-            --border-color: #262626; 
+            --volt: #2563eb; /* 블루 */
+            --bg-main: #ffffff;
+            --bg-card: #f3f4f6;
+            --bg-sub: #e5e7eb;
+            --text-main: #1f2937;
+            --text-sub: #6b7280;
+            --border-color: #d1d5db; 
         }
         
         /* ⚪ 2. 화이트 모드 디자인 변수 적용 (WHITE) */
@@ -38,78 +38,34 @@
             font-family: 'Noto Sans KR', sans-serif; 
             transition: background-color 0.3s, color 0.3s;
         }
-        
-        /* 로딩 스피너 애니메이션 */
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .spinner { animation: spin 1s linear infinite; }
-
     </style>
 </head>
-<body class="bg-[var(--bg-main)] min-h-screen"> <div id="loading-overlay" class="fixed inset-0 bg-[var(--bg-main)] flex flex-col justify-center items-center z-50 transition-opacity duration-300">
-        <i data-lucide="zap" class="w-10 h-10 text-[var(--volt)] spinner"></i>
-        <p class="mt-4 text-[var(--text-sub)] text-sm">포켓몬 프로필 로드 중...</p>
-    </div>
-
-    <header class="sticky top-0 z-10 p-4 border-b border-[var(--border-color)] bg-[var(--bg-main)] transition-colors">
-        <div class="max-w-xl mx-auto flex justify-between items-center">
-            <h1 class="font-bold text-xl font-sport flex items-center gap-1">
-                <i data-lucide="zap" class="w-6 h-6 text-[var(--volt)]"></i>
-                <span class="text-[var(--text-main)]">POKÉ</span><span class="text-[var(--volt)]">RUN</span>
-            </h1>
-            <button onclick="toggleTheme()" class="p-1 rounded-full hover:bg-[var(--bg-sub)] active:scale-95 transition-all text-[var(--text-main)]">
-                <i data-lucide="sun-moon" class="w-6 h-6"></i>
-            </button>
-        </div>
-    </header>
-
+<body class="bg-[var(--bg-main)] min-h-screen"> 
+    
     <main class="max-w-xl mx-auto container">
-        <div id="profile-content" class="p-4 pt-10 opacity-0 transition-opacity duration-500">
-            <div class="flex items-start justify-between mb-5">
-                <div class="flex items-center">
-                    <img id="my-profile-image" src="https://via.placeholder.com/80x80?text=P" alt="포켓몬 이미지" class="w-20 h-20 rounded-full border-2 border-[var(--volt)] object-cover bg-[var(--bg-sub)]">
-                    
-                    <div class="ml-4">
-                        <h3 id="my-profile-name" class="font-bold text-2xl font-sport text-[var(--volt)]">포켓몬 이름</h3>
-                        <p id="my-profile-bio" class="text-sm text-[var(--text-sub)] mt-1">종족 / 타입</p>
-                    </div>
-                </div>
-            </div>
+        <div id="profile-content" class="p-4 opacity-100 transition-opacity duration-500">
             
-            <div class="grid grid-cols-3 gap-3 text-center text-sm mb-6 border-y border-[var(--border-color)] py-3">
-                <div class="flex flex-col">
-                    <span id="pokemon-level" class="text-xl font-bold font-sport text-[var(--volt)]">0</span>
-                    <span class="text-xs text-[var(--text-sub)]">LEVEL</span>
-                </div>
-                <div class="flex flex-col">
-                    <span id="hp-stat" class="text-xl font-bold font-sport text-[var(--text-main)]">0</span>
-                    <span class="text-xs text-[var(--text-sub)]">HP</span>
-                </div>
-                <div class="flex flex-col">
-                    <span id="attack-stat" class="text-xl font-bold font-sport text-[var(--text-main)]">0</span>
-                    <span class="text-xs text-[var(--text-sub)]">ATK</span>
-                </div>
-            </div>
-
             <div id="battle-records" class="pt-6"> 
                 <h4 class="text-lg font-bold font-sport text-[var(--volt)] mb-4 pb-2 border-b border-[var(--border-color)]">누적 대전 기록</h4> 
                 
-                <div class="grid grid-cols-3 gap-3 text-center">
-                    <div class="bg-[var(--bg-sub)] p-4 rounded-xl shadow-lg">
+                <div class="grid grid-cols-2 gap-3 text-center">
+                    <button id="btn-win" onclick="toggleBattleHistory('win')" class="bg-[var(--bg-sub)] p-4 rounded-xl shadow-lg transition-all hover:ring-2 hover:ring-[var(--volt)] active:ring-4 active:ring-[var(--volt)] active:scale-[0.98]">
                         <span id="win-count-total" class="font-bold text-4xl font-sport text-green-400">0</span>
                         <span class="text-xs text-[var(--text-sub)] block mt-1">WIN (승)</span>
-                    </div>
-                    <div class="bg-[var(--bg-sub)] p-4 rounded-xl shadow-lg">
+                    </button>
+                    <button id="btn-lose" onclick="toggleBattleHistory('lose')" class="bg-[var(--bg-sub)] p-4 rounded-xl shadow-lg transition-all hover:ring-2 hover:ring-[var(--volt)] active:ring-4 active:ring-[var(--volt)] active:scale-[0.98]">
                         <span id="lose-count-total" class="font-bold text-4xl font-sport text-red-400">0</span>
                         <span class="text-xs text-[var(--text-sub)] block mt-1">LOSE (패)</span>
-                    </div>
-                    <div class="bg-[var(--bg-sub)] p-4 rounded-xl shadow-lg">
-                        <span id="draw-count-total" class="font-bold text-4xl font-sport text-yellow-400">0</span>
-                        <span class="text-xs text-[var(--text-sub)] block mt-1">DRAW (무)</span>
-                    </div>
+                    </button>
                 </div>
             </div>
-
-        </div>
+            
+            <div id="battle-history" class="mt-6 hidden">
+                <h5 id="history-title" class="text-md font-bold text-[var(--text-main)] mb-3">전투 상세 기록</h5>
+                <ul id="history-list" class="space-y-2">
+                    </ul>
+            </div>
+            </div>
     </main>
     
     <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app-compat.js"></script>
@@ -118,7 +74,6 @@
     
     <script>
         // 🚨🚨🚨 사용자님의 Firebase 프로젝트 설정 🚨🚨🚨
-        // 이 부분을 사용자님의 정확한 값으로 교체했는지 **반드시** 다시 한번 확인해주세요.
         const firebaseConfig = {
              apiKey: "AIzaSyAbHwLLXIH8rBQ8gNMVqE5SE208aIbfFZ0",
              authDomain: "pokbattle.firebaseapp.com",
@@ -135,90 +90,162 @@
         
         let currentPokemonId = null; 
 
-        // UI 업데이트를 통합하는 헬퍼 함수 (프로필)
-        function updateUI(data) {
-            document.getElementById('my-profile-image').src = data.photoURL || (data.pokeId ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${data.pokeId}.png` : 'https://via.placeholder.com/80x80?text=P');
-            document.getElementById('my-profile-name').innerText = data.nickname || data.species || "이름 없음";
-            document.getElementById('my-profile-bio').innerText = `${data.species || 'Unknown'} 포켓몬 | 타입: ${data.type || 'Normal'}`;
+        // 🆕 배틀 기록 더미 데이터 (포켓몬 정보 추가)
+        const dummyBattleHistory = [
+            { id: 1, date: "2025-12-09 14:30", result: "승리", opponent: "라이츄", myPokemon: "피카츄", opponentPokemon: "라이츄", reason: "기술력 우위" },
+            { id: 2, date: "2025-12-08 10:15", result: "패배", opponent: "꼬부기", myPokemon: "파이리", opponentPokemon: "꼬부기", reason: "상성 불리" },
+            { id: 3, date: "2025-12-07 18:00", result: "승리", opponent: "이상해씨", myPokemon: "피카츄", opponentPokemon: "이상해씨", reason: "스피드 우위" },
+            { id: 4, date: "2025-12-06 09:00", result: "패배", opponent: "망나뇽", myPokemon: "파이리", opponentPokemon: "망나뇽", reason: "레벨 차이" },
+            { id: 5, date: "2025-12-05 12:00", result: "승리", opponent: "뮤츠", myPokemon: "리자몽", opponentPokemon: "뮤츠", reason: "극적인 승리" },
+        ];
+        
+        // 전역 변수 설정
+        let allBattleHistory = [];
+        let currentFilter = null; // 'win', 'lose', or null
 
-            document.getElementById('pokemon-level').innerText = data.level || 1;
-            document.getElementById('hp-stat').innerText = data.stats.hp || 0;
-            document.getElementById('attack-stat').innerText = data.stats.attack || 0;
-            
+        // UI 업데이트를 통합하는 헬퍼 함수 (전적만 처리)
+        function updateUI(data) {
             // 전적 탭에 데이터 업데이트
-            document.getElementById('win-count-total').innerText = data.battle.wins || 0;
-            document.getElementById('lose-count-total').innerText = data.battle.loses || 0;
-            document.getElementById('draw-count-total').innerText = data.battle.draws || 0;
+            const battle = data.battle || {};
+            document.getElementById('win-count-total').innerText = battle.wins || 0;
+            document.getElementById('lose-count-total').innerText = battle.loses || 0;
+            // draw는 UI에서 제거됨
         }
+
+        // ------------------------------------
+        // 🆕 배틀 기록 리스트 렌더링 함수 (필터링 포함)
+        // ------------------------------------
+        function renderBattleHistory(historyData, filter) {
+            const historyList = document.getElementById('history-list');
+            historyList.innerHTML = '';
+            
+            // 필터링 로직
+            const filteredData = historyData.filter(record => {
+                if (filter === 'win') return record.result === "승리";
+                if (filter === 'lose') return record.result === "패배";
+                return true; // 필터가 없으면 모두 표시 (실제로는 필터가 항상 적용됨)
+            });
+            
+            if (filteredData.length === 0) {
+                 historyList.innerHTML = `<li class="p-3 bg-[var(--bg-sub)] rounded-lg text-sm text-[var(--text-sub)] text-center">기록된 ${filter === 'win' ? '승리' : '패배'} 전투가 없습니다.</li>`;
+                 return;
+            }
+
+            filteredData.forEach(record => {
+                const isWin = record.result === "승리";
+                const resultClass = isWin ? 'text-green-400' : 'text-red-400';
+                const icon = isWin ? 'trophy' : 'swords';
+                const item = document.createElement('li');
+                item.className = "p-3 bg-[var(--bg-sub)] rounded-lg border border-[var(--border-color)] flex justify-between items-center";
+                
+                // ⭐️ [수정] 내 포켓몬 vs 상대 포켓몬 표시 ⭐️
+                item.innerHTML = `
+                    <div>
+                        <span class="font-bold ${resultClass}">${record.result}</span> | ${record.myPokemon || 'Unknown'} vs ${record.opponentPokemon || 'Unknown'}
+                        <p class="text-[10px] text-[var(--text-sub)] mt-0.5">${record.date} (${record.reason || '상세 정보 없음'})</p>
+                    </div>
+                    <i data-lucide="${icon}" class="w-5 h-5 ${resultClass}"></i>
+                `;
+                historyList.appendChild(item);
+            });
+            lucide.createIcons();
+        }
+
+
+        // ------------------------------------
+        // 🆕 승/패 버튼 클릭 시 기록 토글 함수 (필터 관리)
+        // ------------------------------------
+        window.toggleBattleHistory = function(filterType) {
+            const historyDiv = document.getElementById('battle-history');
+            const historyTitle = document.getElementById('history-title');
+            const btnWin = document.getElementById('btn-win');
+            const btnLose = document.getElementById('btn-lose');
+            
+            // 버튼 스타일 초기화 (선택되지 않은 버튼의 불 끄기)
+            btnWin.classList.remove('ring-4', 'ring-[var(--volt)]');
+            btnLose.classList.remove('ring-4', 'ring-[var(--volt)]');
+            
+            if (currentFilter === filterType) {
+                // 이미 해당 필터가 활성화된 경우 -> 닫기 (토글)
+                historyDiv.classList.add('hidden');
+                currentFilter = null;
+            } else {
+                // 새로운 필터 활성화
+                currentFilter = filterType;
+                
+                // 제목 업데이트
+                historyTitle.innerText = `${currentFilter === 'win' ? '승리' : '패배'} 전투 상세 기록`;
+                
+                // 버튼에 활성화 스타일 적용 (불 켜기)
+                if (filterType === 'win') {
+                    btnWin.classList.add('ring-4', 'ring-[var(--volt)]');
+                } else {
+                    btnLose.classList.add('ring-4', 'ring-[var(--volt)]');
+                }
+
+                // 기록 렌더링 및 표시
+                renderBattleHistory(allBattleHistory, currentFilter);
+                historyDiv.classList.remove('hidden');
+            }
+        }
+
 
         // ===============================================
         // 1. 핵심 기능: 포켓몬 프로필 데이터 로드
         // ===============================================
         window.loadPokemonProfile = async (pokemonId) => {
             const profileContent = document.getElementById('profile-content');
-            const loadingOverlay = document.getElementById('loading-overlay');
-            const myProfileName = document.getElementById('my-profile-name');
-            const myProfileBio = document.getElementById('my-profile-bio');
             
-            loadingOverlay.classList.remove('opacity-0', 'hidden'); 
-            profileContent.classList.remove('opacity-100'); 
+            profileContent.classList.add('opacity-100'); // 상단 UI가 없으므로 즉시 표시
 
             if (!pokemonId || pokemonId === 'dummy_test') {
                 // 더미 데이터 로드 (ID 누락 시 또는 테스트용)
                 const dummyData = {
-                    nickname: "⚡️ 피카츄 (테스트)",
-                    species: "전기쥐 포켓몬",
-                    type: "전기",
-                    pokeId: 25, 
-                    level: 99,
-                    stats: { hp: 120, attack: 150 },
-                    battle: { wins: 30, loses: 10, draws: 5 }, 
-                    photoURL: null 
+                    battle: { wins: 30, loses: 10, draws: 0 }, 
                 };
                 updateUI(dummyData);
                 currentPokemonId = 'dummy_test'; 
+                // 🆕 전역 변수에 더미 기록 저장
+                allBattleHistory = dummyBattleHistory;
+
             } else {
                 // ⭐️ 실제 Firebase 데이터 로드 (단일 프로필) ⭐️
                 try {
                     const snap = await db.ref(`pokemon_profiles/${pokemonId}`).once('value');
                     
                     if (snap.exists()) {
-                        updateUI(snap.val());
+                        const data = snap.val();
+                        updateUI(data);
+                        // 🆕 전역 변수에 실제 기록 저장 (battleHistory 필드가 있다고 가정)
+                        allBattleHistory = data.battleHistory || []; 
                     } else {
-                        myProfileName.innerText = "⚠️ 데이터 없음";
-                        myProfileBio.innerText = `ID: ${pokemonId} 에 해당하는 데이터가 없습니다.`;
+                        updateUI({}); 
+                        allBattleHistory = [];
+                        // 에러 메시지 처리는 상단 UI 삭제로 인해 간소화됨
                     }
                     currentPokemonId = pokemonId; 
 
                 } catch (error) {
                     console.error("🔥 포켓몬 프로필 로드 실패:", error);
-                    myProfileName.innerText = "❌ 로드 오류";
-                    myProfileBio.innerText = `Firebase 연결 오류: ${error.code || 'UNKNOWN'}`;
-                    alert(`Firebase 프로필 로드 오류 발생: ${error.code || 'UNKNOWN'}\n\n데이터 로드에 실패했습니다. 다음을 확인하세요:\n1. Firebase Config 값\n2. Database Rules 확인`);
+                    updateUI({}); 
+                    allBattleHistory = [];
                 }
             }
             
-            // 로딩 종료
-            loadingOverlay.classList.add('opacity-0');
-            setTimeout(() => loadingOverlay.classList.add('hidden'), 300);
-            profileContent.classList.add('opacity-100');
+            // 🆕 초기화: 상세 기록은 숨겨져 있어야 합니다.
+            document.getElementById('battle-history').classList.add('hidden');
+            currentFilter = null;
             lucide.createIcons();
         };
 
         // ===============================================
-        // 2. UI 공통 기능 (테마)
+        // 2. UI 공통 기능 (테마) - 이제 이 파일에는 필요 없지만 loadTheme만 남겨둠
         // ===============================================
         
         window.loadTheme = () => {
             if (localStorage.getItem('theme') === 'white') {
                 document.body.classList.add('white-mode');
             }
-        };
-
-        window.toggleTheme = () => {
-            document.body.classList.toggle('white-mode');
-            localStorage.setItem('theme', document.body.classList.contains('white-mode') ? 'white' : 'dark');
-            lucide.createIcons(); 
         };
 
         // 페이지 로드시 실행
