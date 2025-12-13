@@ -2,587 +2,411 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>POKE RUN: HOME</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>POKE RUN: ACCESS</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,700;1,900&family=Inter:wght@400;700;900&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
     
     <style>
-        /* --- 1. 공통 테마 설정 (다크 모드 기본값) --- */
-        :root {
-            --volt: #ccff00;         /* 네온 그린 */
-            --bg-main: #000000;       /* 검정 */
-            --bg-card: #111111;       /* 짙은 회색 카드 */
-            --bg-sub: #262626;        /* 서브 배경 (입력창 등) */
-            --text-main: #ffffff;     /* 흰색 텍스트 */
-            --text-sub: #9ca3af;      /* 서브 텍스트 */
-            --border-color: #262626;  /* 경계선 */
+        /* --- 1. 테마 설정 (White Mode Fixed) --- */
+        :root { 
+            --volt: #2563eb;         /* 선명한 파랑 (강조색) */
+            --bg-main: #f0f4f8;      /* 밝은 배경 */
+            --bg-card: #ffffff;      /* 흰색 카드 */
+            --text-main: #1a1a1a;    /* 검정 텍스트 */
+            --border-color: #cccccc; /* 밝은 경계선 */
+            --text-sub: #4b5563;     /* 어두운 서브 텍스트 */
         }
-
-        /* ⚪ 2. 화이트 모드 디자인 변수 적용 */
-        [data-theme="light"] {
-            --volt: #2563eb;          /* 선명한 파랑 (강조색) */
-            --bg-main: #f0f4f8;       /* 밝은 배경 */
-            --bg-card: #ffffff;       /* 흰색 카드 */
-            --bg-sub: #e5e7eb;        /* 밝은 서브 배경 (입력창 등) */
-            --text-main: #1a1a1a;     /* 검정 텍스트 */
-            --text-sub: #4b5563;      /* 어두운 서브 텍스트 */
-            --border-color: #cccccc;  /* 밝은 경계선 */
-        }
-
-        /* [핵심 수정] 화면 축소 강제 방지 및 PC/모바일 레이아웃 고정 */
-        html, body {
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
+        
+        /* --- 2. 기본 스타일 --- */
+        body { 
+            font-family: 'Inter', 'Noto Sans KR', sans-serif; 
+            background-color: var(--bg-main); 
+            color: var(--text-main); 
             overflow: hidden; 
-            position: fixed; 
+            margin: 0; padding: 0;
+        }
+        .font-sport { font-family: 'Chakra Petch', sans-serif; }
+        
+        /* 모달 (팝업창) */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.5); z-index: 50; display: none; 
+            justify-content: center; align-items: center; padding: 20px; 
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            border-radius: 16px; width: 100%; max-width: 420px; max-height: 90vh; 
+            overflow-y: auto; padding: 24px; position: relative;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 입력 필드 스타일 */
+        .input-group { margin-bottom: 10px; position: relative; }
+        .input-dark {
+            width: 100%; background: var(--bg-main); /* 살짝 어두운 배경 */
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px 12px; border-radius: 8px; outline: none; transition: 0.2s; font-size: 14px;
+        }
+        .input-dark:focus { border-color: var(--volt); background: #fff; }
+        .input-error { border-color: #ef4444 !important; }
+        .input-success { border-color: #22c55e !important; }
+
+        /* 중복확인 버튼 */
+        .btn-check {
+            position: absolute; right: 5px; top: 28px;
+            background: var(--bg-card);
+            color: var(--text-sub);
+            padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; border: 1px solid var(--border-color);
+        }
+        .btn-check:hover { background: var(--volt); color: white; border-color: var(--volt); }
+        
+        .msg-validate { font-size: 11px; margin-top: 2px; display: none; font-weight: bold; }
+        
+        /* 탭 버튼 */
+        .tab-btn { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-bottom: 2px solid var(--border-color); color: var(--text-sub); }
+        .tab-btn.active { border-color: var(--volt); color: var(--text-main); font-weight: bold; }
+
+        /* 찾기 결과 박스 */
+        .find-result-box {
             background-color: var(--bg-main);
             color: var(--text-main);
-            font-family: 'Inter', 'Noto Sans KR', sans-serif;
-            touch-action: pan-y; 
-            -webkit-text-size-adjust: 100%;
-            transition: background-color 0.3s, color 0.3s; /* 테마 전환 효과 */
+            border: 1px solid var(--border-color);
         }
 
-        .font-sport { font-family: 'Chakra Petch', sans-serif; }
+        /* 셀렉트 박스 화살표 (검은색) */
+        select.input-dark { 
+            appearance: none; 
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); 
+            background-repeat: no-repeat; 
+            background-position: right 0.5rem center; 
+            background-size: 0.8em; 
+            padding-right: 2rem;
+        }
+        
+        /* 스크롤바 숨김 */
         .scrollbar-hide::-webkit-scrollbar { display: none; }
-
-        /* 하트 애니메이션 */
-        @keyframes heart-pop {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.3); }
-            100% { transform: scale(1); }
-        }
-        .animate-heart { animation: heart-pop 0.3s ease-in-out; }
-
-        /* 댓글/알림 시트 (Bottom Sheet) 스타일 */
-        .bottom-sheet-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); z-index: 50;
-            visibility: hidden; opacity: 0; transition: all 0.3s ease;
-            display: flex; align-items: flex-end; justify-content: center;
-        }
-        .bottom-sheet-overlay.open { visibility: visible; opacity: 1; }
-        
-        .bottom-sheet {
-            background: var(--bg-card); /* 변수 사용 */
-            width: 100%; max-width: 450px; height: 70vh;
-            border-top-left-radius: 24px; border-top-right-radius: 24px;
-            transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-            display: flex; flex-direction: column;
-            border: 1px solid var(--border-color); /* 테두리 추가 */
-        }
-        .bottom-sheet-overlay.open .bottom-sheet { transform: translateY(0); }
-        
-        .sheet-handle {
-            width: 40px; height: 4px; background: var(--bg-sub); /* 변수 사용 */
-            border-radius: 2px; margin: 12px auto;
-            cursor: grab;
-        }
-
-        .input-dark {
-            width: 100%; background: var(--bg-sub); border: none; /* 변수 사용 */
-            color: var(--text-main); padding: 12px 16px; border-radius: 20px;
-            outline: none; font-size: 14px;
-        }
     </style>
-</head>
-<body class="flex justify-center h-screen w-full bg-[var(--bg-main)]">
-
-    <div class="w-full max-w-md h-full relative flex flex-col bg-[var(--bg-main)] shadow-2xl overflow-hidden border-x border-[var(--border-color)] sm:border-x-0">
-        
-        <header class="px-5 py-4 flex justify-between items-center bg-[var(--bg-card)]/90 backdrop-blur-sm z-20 border-b border-[var(--border-color)]">
-            <h1 class="text-2xl font-black italic tracking-tighter text-[var(--text-main)] font-sport">
-                POKE<span class="text-[var(--volt)]">RUN</span>
-            </h1>
-            <div class="flex gap-4 items-center"> 
-                <button onclick="toggleTheme()" class="text-[var(--text-main)] hover:text-[var(--volt)] transition-colors">
-                    <i id="theme-icon" data-lucide="sun-moon" class="w-6 h-6"></i>
-                </button>
-                
-                <button onclick="openActivitySheet()">
-                    <i data-lucide="heart" class="w-6 h-6 text-[var(--text-main)]"></i>
-                </button>
-                <button onclick="location.href='message.html'">
-                    <i data-lucide="send" class="w-6 h-6 text-[var(--text-main)] transform -rotate-45 mt-[9px]"></i>
-                </button>
-            </div>
-        </header>
-
-        <main id="feed-container" class="flex-1 overflow-y-auto scrollbar-hide pb-20 pt-2">
-            <div class="text-center text-[var(--text-sub)] py-20 flex flex-col items-center">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--volt)] mb-4"></div>
-                <p>피드를 불러오는 중...</p>
-            </div>
-        </main>
-
-        <nav class="w-full bg-[var(--bg-card)] border-t border-[var(--border-color)] px-2 py-4 flex justify-between items-end pb-8 z-30">
-            <button onclick="location.reload()" class="flex-1 flex flex-col items-center gap-1 text-[var(--volt)] pb-1">
-                <i data-lucide="home" class="w-6 h-6"></i>
-                <span class="text-[10px] font-bold">피드</span>
-            </button>
-            
-            <button onclick="location.href='reels.html'" class="flex-1 flex flex-col items-center gap-1 text-[var(--text-sub)] hover:text-[var(--text-main)] transition pb-1">
-                <i data-lucide="clapperboard" class="w-6 h-6"></i>
-                <span class="text-[10px] font-bold">릴스</span>
-            </button>
-            
-            <div class="relative w-16 flex justify-center z-10">
-                <button onclick="location.href='upload.html'" class="absolute bottom-2 bg-[var(--volt)] text-[var(--bg-main)] p-3.5 rounded-full border-4 border-[var(--bg-main)] shadow-lg active:scale-95 transition-transform">
-                    <i data-lucide="plus" class="w-7 h-7"></i>
-                </button>
-            </div>
-
-            <button onclick="location.href='profile.html'" class="flex-1 flex flex-col items-center gap-1 text-[var(--text-sub)] hover:text-[var(--text-main)] transition pb-1">
-                <i data-lucide="user" class="w-6 h-6"></i>
-                <span class="text-[10px] font-bold">프로필</span>
-            </button>
-            
-            <button onclick="location.href='settings.html'" class="flex-1 flex flex-col items-center gap-1 text-[var(--text-sub)] hover:text-[var(--text-main)] transition pb-1">
-                <i data-lucide="settings" class="w-6 h-6"></i>
-                <span class="text-[10px] font-bold">설정</span>
-            </button>
-        </nav>
-
-        <div id="sheet-reply" class="bottom-sheet-overlay" onclick="closeReplySheet(event)">
-            <div id="sheet-modal" class="bottom-sheet shadow-2xl">
-                <div class="sheet-handle"></div>
-                <div class="px-5 pb-3 border-b border-[var(--border-color)] text-center font-bold text-sm">
-                    댓글 <span id="reply-count-header" class="text-[var(--volt)]">0</span>
-                </div>
-                
-                <div id="reply-list" class="flex-1 overflow-y-auto p-4"> </div>
-
-                <div class="p-4 border-t border-[var(--border-color)] bg-[var(--bg-card)] pb-8">
-                    <div class="flex items-center gap-3">
-                        <img id="my-avatar-input" class="w-8 h-8 rounded-full bg-[var(--bg-sub)] object-cover">
-                        <div class="flex-1 relative">
-                            <input type="text" id="reply-input" class="input-dark pr-12" placeholder="댓글 달기...">
-                            <button onclick="addReply()" class="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--volt)] font-bold text-sm px-2 py-1">게시</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="sheet-activity" class="bottom-sheet-overlay" onclick="closeActivitySheet(event)">
-            <div id="sheet-activity-modal" class="bottom-sheet shadow-2xl">
-                <div class="sheet-handle"></div>
-                <div class="px-5 pb-3 border-b border-[var(--border-color)] text-center font-bold text-sm">
-                    활동
-                </div>
-                <div id="activity-list" class="flex-1 overflow-y-auto p-4">
-                    <div class="text-center text-[var(--text-sub)] py-10 text-sm">로딩 중...</div>
-                </div>
-            </div>
-        </div>
-
-    </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getDatabase, ref, onValue, push, update, remove, get, query, limitToLast, orderByChild } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    // ----------------------------------------------------
+    // (1) 외부 모듈 import (새로 만든 파일에서 가져옴)
+    // ----------------------------------------------------
+    import { 
+        auth, 
+        isIdChecked, 
+        isNickChecked,
+        handleLoginLogic,
+        checkDuplicateIDLogic,
+        checkDuplicateNickLogic,
+        handleSignupLogic,
+        findIDLogic,
+        findPWLogic
+    } from "./firebase-service.js"; // 👈 경로 확인 필수! (같은 폴더에 있다면 ./firebase-service.js)
 
-        const firebaseConfig = { 
-            apiKey: "AIzaSyAbHwLLXIH8rBQ8gNMVqE5SE208aIbfFZ0", 
-            authDomain: "pokbattle.firebaseapp.com", 
-            databaseURL: "https://pokbattle-default-rtdb.firebaseio.com", 
-            projectId: "pokbattle", 
-            storageBucket: "pokbattle.firebasestorage.app", 
-            messagingSenderId: "445300582484", 
-            appId: "1:445300582484:web:f8f1373a3bbf643face5c1" 
-        };
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app);
+    // ----------------------------------------------------
+    // (2) window 함수 재정의 (DOM에서 데이터 가져와 모듈 함수 호출)
+    // ----------------------------------------------------
 
-        let currentUser = null;
-        let currentPostId = null;
-
-        // --- ⚙️ 테마 전환 기능 (추가) ---
-        function updateThemeIcon(isLight) {
-            const icon = document.getElementById('theme-icon');
-            // Lucide 아이콘을 사용하여 테마 전환에 따른 아이콘 변경
-            if (icon) {
-                 if(isLight) {
-                    icon.setAttribute('data-lucide', 'moon'); // 화이트 모드일 때 달 아이콘
-                 } else {
-                    icon.setAttribute('data-lucide', 'sun-moon'); // 다크 모드일 때 해/달 아이콘
-                 }
-                 lucide.createIcons(); // 아이콘 변경 후 렌더링
-            }
-        }
+    // --- 로그인 로직 ---
+    window.handleLogin = async () => {
+        const email = document.getElementById('login-email').value.trim();
+        const pw = document.getElementById('login-pw').value;
         
-        function loadTheme() {
-            const savedTheme = localStorage.getItem('theme');
-            const isLight = savedTheme === 'light';
-            if (isLight) {
-                document.documentElement.setAttribute('data-theme', 'light');
-            }
-            updateThemeIcon(isLight);
+        try {
+            await handleLoginLogic(email, pw); // 👈 모듈 함수 호출
+        } catch(e) {
+            alert("로그인 실패!\n" + e.message);
         }
+    };
 
-        window.toggleTheme = () => {
-            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-            if (isLight) {
-                // 다크 모드로 전환
-                document.documentElement.removeAttribute('data-theme');
-                localStorage.setItem('theme', 'dark');
-                updateThemeIcon(false);
-            } else {
-                // 화이트 모드로 전환
-                document.documentElement.setAttribute('data-theme', 'light');
-                localStorage.setItem('theme', 'light');
-                updateThemeIcon(true);
-            }
-        };
-        // ----------------------------------------------------
-
-
-        // 1. 인증 상태 확인
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                // 아바타 배경색도 변수로 처리
-                document.getElementById('my-avatar-input').src = user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`;
-                loadFeed();
-            } else {
-                alert("로그인이 필요합니다.");
-                location.href = 'home.html';
-            }
-        });
-
-        // 2. 피드 불러오기
-        function loadFeed() {
-            const feedContainer = document.getElementById('feed-container');
-            const postsQuery = query(ref(db, 'posts'), limitToLast(20));
-
-            onValue(postsQuery, (snapshot) => {
-                const data = snapshot.val();
-                
-                if (!data) {
-                    feedContainer.innerHTML = `
-                        <div class="flex flex-col items-center justify-center h-full text-[var(--text-sub)]">
-                            <i data-lucide="camera-off" class="w-12 h-12 mb-3 opacity-50"></i>
-                            <p>아직 게시물이 없습니다.</p>
-                            <button onclick="location.href='upload.html'" class="mt-4 text-[var(--volt)] font-bold text-sm">첫 게시물 올리기</button>
-                        </div>`;
-                    lucide.createIcons();
-                    return;
-                }
-
-                const posts = Object.entries(data).reverse();
-                let allPostsHtml = "";
-
-                posts.forEach(([key, post]) => {
-                    const likeCount = post.likes ? Object.keys(post.likes).length : 0;
-                    const commentCount = post.comments ? Object.keys(post.comments).length : 0;
-                    const isLiked = post.likes && currentUser && post.likes[currentUser.uid];
-                    // 텍스트 색상을 변수 기반으로 변경
-                    const heartClass = isLiked ? "fill-[var(--volt)] text-[var(--volt)]" : "text-[var(--text-main)]";
-                    
-                    allPostsHtml += `
-                        <article class="border-b border-[var(--border-color)] pb-4 mb-4">
-                            <div class="px-4 py-3 flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-9 h-9 rounded-full bg-[var(--bg-sub)] overflow-hidden border border-[var(--border-color)]">
-                                        <img src="${post.authorAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + post.author}" class="w-full h-full object-cover">
-                                    </div>
-                                    <div>
-                                        <p class="font-bold text-sm text-[var(--text-main)] leading-none mb-1">${post.authorName}</p>
-                                        <p class="text-xs text-[var(--text-sub)]">${new Date(post.timestamp).toLocaleDateString()}</p>
-                                    </div>
-                                </div>
-                                <button class="text-[var(--text-sub)]"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>
-                            </div>
-
-                            <div class="w-full bg-[var(--bg-main)] h-auto flex items-center justify-center overflow-hidden relative" ondblclick="toggleLike('${key}')">
-                                <img src="${post.image}" class="w-full h-auto object-contain" loading="lazy" decoding="async">
-                                <i id="heart-anim-${key}" data-lucide="heart" class="w-24 h-24 text-[var(--volt)] fill-[var(--volt)] absolute opacity-0 transition-opacity duration-300 transform scale-0"></i>
-                            </div>
-
-                            <div class="px-4 pt-3 flex justify-between items-center">
-                                <div class="flex gap-5 items-center"> 
-                                    <button onclick="toggleLike('${key}')" class="transition-transform active:scale-90">
-                                        <i id="like-icon-${key}" data-lucide="heart" class="w-7 h-7 ${heartClass} transition-colors duration-200"></i>
-                                    </button>
-                                    <button onclick="openReplySheet('${key}')">
-                                        <i data-lucide="message-circle" class="w-7 h-7 text-[var(--text-main)] hover:text-[var(--text-sub)]"></i>
-                                    </button>
-                                    </div>
-                                </div>
-
-                            <div class="px-4 py-2">
-                                <p class="font-bold text-sm text-[var(--text-main)] mb-1">좋아요 ${likeCount}개</p>
-                                <div class="text-sm">
-                                    <span class="font-bold mr-1">${post.authorName}</span>
-                                    <span class="text-[var(--text-sub)]">${post.content}</span>
-                                </div>
-                                ${commentCount > 0 ? `<button onclick="openReplySheet('${key}')" class="text-[var(--text-sub)] text-sm mt-1">댓글 ${commentCount}개 모두 보기</button>` : ''}
-                            </div>
-                        </article>
-                    `;
-                });
-
-                feedContainer.innerHTML = allPostsHtml;
-                lucide.createIcons();
-            });
+    // --- 상태 변화 감지 ---
+    // 이 부분은 auth 객체를 import 했으므로 그대로 유지 가능합니다.
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            window.location.href = "index.html";
+        } else {
+            document.getElementById('login-screen').style.display = 'flex';
         }
+    });
 
-        // 3. 좋아요 & 알림 전송 기능 (기능 로직 변경 없음)
-        window.toggleLike = (postId) => {
-            if(!currentUser) return alert("로그인이 필요합니다.");
-
-            const icon = document.getElementById(`like-icon-${postId}`);
-            // isLiked 상태에 따라 fill 색상 토글을 위해 클래스명 변경
-            const isLiked = icon.classList.contains('fill-[var(--volt)]');
-
-            if (icon) {
-                if (isLiked) {
-                    // 좋아요 취소 UI
-                    icon.classList.remove('fill-[var(--volt)]', 'text-[var(--volt)]');
-                    icon.classList.add('text-[var(--text-main)]');
-                } else {
-                    // 좋아요 UI
-                    icon.classList.add('fill-[var(--volt)]', 'text-[var(--volt)]');
-                    icon.classList.remove('text-[var(--text-main)]');
-                    const heartAnim = document.getElementById(`heart-anim-${postId}`);
-                    if(heartAnim) {
-                        heartAnim.style.opacity = '1';
-                        heartAnim.style.transform = 'scale(1.2)';
-                        setTimeout(() => { heartAnim.style.opacity = '0'; heartAnim.style.transform = 'scale(0)'; }, 800);
-                    }
-                }
-            }
-            // ... (Firebase 로직은 변경 없음)
-            const likeRef = ref(db, `posts/${postId}/likes/${currentUser.uid}`);
-            get(likeRef).then((snapshot) => {
-                if (snapshot.exists()) {
-                    remove(likeRef);
-                } else {
-                    // 좋아요 저장
-                    update(ref(db, `posts/${postId}/likes`), { [currentUser.uid]: true });
-
-                    // 알림 보내기 (작성자에게)
-                    get(ref(db, `posts/${postId}`)).then(postSnap => {
-                        if(postSnap.exists()){
-                            const postData = postSnap.val();
-                            // 본인 게시물이 아닐 때만 알림 전송
-                            if(postData.author !== currentUser.uid){ 
-                                push(ref(db, `notifications/${postData.author}`), {
-                                    type: 'like',
-                                    fromUid: currentUser.uid,
-                                    fromName: currentUser.displayName || "익명",
-                                    fromAvatar: currentUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.uid}`,
-                                    postId: postId,
-                                    postImage: postData.image,
-                                    timestamp: Date.now()
-                                });
-                            }
-                        }
-                    });
-                }
-            });
-        };
-
-        // 4. 댓글 시트 열기 (로직 변경 없음)
-        window.openReplySheet = (postId) => {
-            currentPostId = postId;
-            document.getElementById('sheet-reply').classList.add('open');
-            loadReplies(postId);
-        };
-
-        window.closeReplySheet = (e) => {
-            if (e.target.classList.contains('bottom-sheet-overlay')) {
-                document.getElementById('sheet-reply').classList.remove('open');
-                currentPostId = null;
-            }
-        };
-
-        // 알림 시트 열기 (로직 변경 없음)
-        window.openActivitySheet = () => {
-            if(!currentUser) return;
-            document.getElementById('sheet-activity').classList.add('open');
-            loadNotifications();
-        };
-
-        // 알림 시트 닫기 (로직 변경 없음)
-        window.closeActivitySheet = (e) => {
-            if (e.target.classList.contains('bottom-sheet-overlay')) {
-                document.getElementById('sheet-activity').classList.remove('open');
-            }
-        };
-
-        // 알림 데이터 불러오기 (텍스트 색상 변수 사용)
-        function loadNotifications() {
-            const list = document.getElementById('activity-list');
-            const notiRef = query(ref(db, `notifications/${currentUser.uid}`), limitToLast(30));
-            
-            onValue(notiRef, (snapshot) => {
-                const data = snapshot.val();
-                if (!data) {
-                    list.innerHTML = `<div class="text-center text-[var(--text-sub)] py-10 text-sm">
-                        <i data-lucide="bell-off" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
-                        새로운 활동이 없습니다.
-                    </div>`;
-                    lucide.createIcons();
-                    return;
-                }
-
-                const notis = Object.values(data).reverse(); 
-                let html = "";
-                
-                notis.forEach(noti => {
-                    if(noti.type === 'like') {
-                        html += `
-                        <div class="flex items-center gap-3 py-3 border-b border-[var(--border-color)]">
-                            <img src="${noti.fromAvatar}" class="w-10 h-10 rounded-full bg-[var(--bg-sub)] object-cover">
-                            <div class="flex-1 text-sm">
-                                <span class="font-bold text-[var(--text-main)]">${noti.fromName}</span>님이 회원님의 게시물을 좋아합니다.
-                                <div class="text-xs text-[var(--text-sub)] mt-1">${new Date(noti.timestamp).toLocaleDateString()}</div>
-                            </div>
-                            <img src="${noti.postImage}" class="w-10 h-10 rounded object-cover border border-[var(--border-color)]">
-                        </div>
-                        `;
-                    }
-                });
-                
-                list.innerHTML = html;
-                lucide.createIcons();
-            });
-        }
-
-        // 5. 댓글 로드 (텍스트 색상 변수 사용)
-        function loadReplies(postId) {
-            const replyList = document.getElementById('reply-list');
-            const countHeader = document.getElementById('reply-count-header');
-            
-            onValue(ref(db, `posts/${postId}/comments`), (snap) => {
-                replyList.innerHTML = "";
-                const data = snap.val();
-                
-                if (!data) {
-                    countHeader.innerText = "0";
-                    replyList.innerHTML = "<div class='text-center text-[var(--text-sub)] py-10 text-sm'>첫 댓글을 남겨보세요!</div>";
-                    return;
-                }
-
-                const comments = Object.values(data);
-                countHeader.innerText = comments.length;
-
-                let allCommentsHtml = "";
-                comments.forEach((c, index) => {
-                    const borderClass = index < comments.length - 1 
-                        ? "border-b border-[var(--border-color)] pb-3 mb-3" 
-                        : "pb-1 mb-1";
-
-                    allCommentsHtml += `
-                        <div class="flex gap-3 ${borderClass} animate-fade-in">
-                            <img src="${c.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + c.author}" class="w-8 h-8 rounded-full bg-[var(--bg-sub)] mt-1">
-                            <div class="flex-1">
-                                <div class="flex items-baseline gap-2">
-                                    <span class="font-bold text-xs text-[var(--text-main)]">${c.author}</span>
-                                    <span class="text-[10px] text-[var(--text-sub)]">${new Date(c.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                                </div>
-                                <p class="text-sm text-[var(--text-sub)] mt-0.5">${c.text}</p>
-                            </div>
-                        </div>`;
-                });
-                replyList.innerHTML = allCommentsHtml;
-                replyList.scrollTop = replyList.scrollHeight;
-            });
-        }
-
-        // 6. 댓글 작성 (로직 변경 없음)
-        window.addReply = () => {
-            const input = document.getElementById('reply-input');
-            const text = input.value.trim();
-            if (!text) return;
-            if (!currentUser) return alert("로그인이 필요합니다.");
-
-            const newCommentRef = push(ref(db, `posts/${currentPostId}/comments`));
-            update(newCommentRef, {
-                text: text,
-                author: currentUser.displayName || "익명",
-                avatar: currentUser.photoURL || "",
-                timestamp: Date.now()
-            });
-            input.value = "";
-        };
-
-        lucide.createIcons();
-
-        /* --- [모바일 & PC 통합] 드래그 닫기 로직 (변경 없음) --- */
-        setupDragToClose('sheet-modal', 'reply-list', 'sheet-reply');
-        setupDragToClose('sheet-activity-modal', 'activity-list', 'sheet-activity');
-
-        function setupDragToClose(sheetId, listId, overlayId) {
-            const sheet = document.getElementById(sheetId);
-            const list = document.getElementById(listId);
-            const overlay = document.getElementById(overlayId);
-            let touchStart = 0;
-            let touchCurrent = 0;
-            let isDragging = false;
-
-            // Touch
-            sheet.addEventListener('touchstart', (e) => {
-                if (list.contains(e.target) && list.scrollTop > 0) return;
-                touchStart = e.touches[0].clientY;
-                isDragging = true;
-                sheet.style.transition = 'none';
-            });
-            sheet.addEventListener('touchmove', (e) => {
-                if (!isDragging) return;
-                touchCurrent = e.touches[0].clientY;
-                const delta = touchCurrent - touchStart;
-                if (delta > 0) {
-                    if(e.cancelable) e.preventDefault();
-                    sheet.style.transform = `translateY(${delta}px)`;
-                }
-            });
-            sheet.addEventListener('touchend', () => handleDragEnd());
-
-            // Mouse
-            sheet.addEventListener('mousedown', (e) => {
-                if (list.contains(e.target) && list.scrollTop > 0) return;
-                touchStart = e.clientY;
-                isDragging = true;
-                sheet.style.transition = 'none';
-            });
-            window.addEventListener('mousemove', (e) => {
-                if (!isDragging) return;
-                touchCurrent = e.clientY;
-                const delta = touchCurrent - touchStart;
-                if (delta > 0) sheet.style.transform = `translateY(${delta}px)`;
-            });
-            window.addEventListener('mouseup', () => {
-                if(isDragging) handleDragEnd();
-            });
-
-            function handleDragEnd() {
-                isDragging = false;
-                sheet.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'; 
-                const delta = touchCurrent - touchStart;
-                if (delta > 120) {
-                    overlay.classList.remove('open');
-                    setTimeout(() => { 
-                        sheet.style.transform = ''; 
-                        if(overlayId === 'sheet-reply') currentPostId = null;
-                    }, 300);
-                } else {
-                    sheet.style.transform = ''; 
-                }
-                touchStart = 0; touchCurrent = 0;
-            }
-        }
+    // --- 회원가입 및 찾기 기능 ---
+    window.checkDuplicateID = async () => {
+        const idInput = document.getElementById('reg-custom-id');
+        const val = idInput.value.trim();
+        const msg = document.getElementById('msg-id');
         
-        // ⭐️ 페이지 로드 시 테마 적용
-        document.addEventListener('DOMContentLoaded', loadTheme);
-    </script>
+        try {
+            const { isAvailable, message } = await checkDuplicateIDLogic(val); // 👈 모듈 함수 호출
+            msg.style.display = 'block';
+            msg.innerText = message;
+            msg.style.color = isAvailable ? "#22c55e" : "#ef4444";
+            // isIdChecked는 모듈 내부에서 업데이트되지만, 혹시 모를 상황에 대비하여 
+            // 모듈에서 반환된 값을 기반으로 로컬 변수 업데이트도 가능합니다. (현재 로직에서는 모듈 내부에서 처리)
+        } catch(e) {
+            alert(e.message);
+            idInput.focus();
+        }
+    };
+
+    window.checkDuplicateNick = async () => {
+        const val = document.getElementById('reg-nick').value.trim();
+        const msg = document.getElementById('msg-nick');
+        
+        try {
+            const { isAvailable, message } = await checkDuplicateNickLogic(val); // 👈 모듈 함수 호출
+            msg.style.display = 'block';
+            msg.innerText = message;
+            msg.style.color = isAvailable ? "#22c55e" : "#ef4444";
+        } catch(e) {
+            alert(e.message);
+        }
+    };
+
+    window.checkPwMatch = () => {
+        const pw = document.getElementById('reg-pw').value;
+        const pw2 = document.getElementById('reg-pw2').value;
+        const msg = document.getElementById('msg-pw');
+        if(pw2 === "") { msg.style.display = 'none'; return; }
+        msg.style.display = 'block';
+        if(pw === pw2) {
+            msg.innerText = "일치합니다."; msg.style.color = "#22c55e";
+        } else {
+            msg.innerText = "불일치합니다."; msg.style.color = "#ef4444";
+        }
+    };
+
+    window.handleSignup = async () => {
+        const email = document.getElementById('reg-email').value.trim();
+        const customId = document.getElementById('reg-custom-id').value.trim();
+        const nick = document.getElementById('reg-nick').value.trim();
+        const pw = document.getElementById('reg-pw').value;
+        const pw2 = document.getElementById('reg-pw2').value;
+        const name = document.getElementById('reg-name').value;
+        const phone = document.getElementById('reg-phone').value;
+        const y = document.getElementById('reg-year').value;
+        const m = document.getElementById('reg-month').value;
+        const d = document.getElementById('reg-day').value;
+        const dob = `${y}-${m}-${d}`;
+        
+        if(pw !== pw2) return alert("비밀번호 불일치."); // 로컬 유효성 검사
+
+        try {
+            await handleSignupLogic(email, customId, nick, pw, name, phone, dob); // 👈 모듈 함수 호출
+            alert("가입 완료! 자동 로그인됩니다.");
+            closeModal('modal-signup');
+        } catch(e) {
+            alert("가입 오류: " + e.message);
+        }
+    };
+
+    window.findID = async () => {
+        const email = document.getElementById('find-id-email').value.trim();
+        const resultBox = document.getElementById('find-result-text-id');
+        
+        resultBox.innerHTML = "확인 중...";
+
+        try {
+            const userId = await findIDLogic(email); // 👈 모듈 함수 호출
+            
+            if(userId) {
+                resultBox.innerHTML = `
+                    <div class="text-center">
+                        <p class="text-sm text-gray-500 mb-2">회원님의 아이디는</p>
+                        <b class="text-[var(--volt)] text-2xl block mb-6">${userId}</b>
+                        <button onclick="closeModal('modal-find')" class="w-full bg-[var(--volt)] text-white font-bold py-3 rounded-xl hover:opacity-80 transition-colors">
+                            로그인 하러 가기
+                        </button>
+                    </div>
+                `;
+            } else {
+                resultBox.innerHTML = `<span style="color:#ef4444">가입된 정보가 없습니다.</span>`;
+            }
+        } catch(e) {
+            alert("오류: " + e.message);
+            resultBox.innerHTML = `<span style="color:#ef4444">${e.message}</span>`;
+        }
+    };
+
+    window.findPW = async () => {
+        const targetId = document.getElementById('find-pw-id').value.trim();
+        const targetEmail = document.getElementById('find-pw-email').value.trim();
+        const resultBox = document.getElementById('find-result-text-pw');
+
+        resultBox.innerHTML = "확인 중...";
+
+        try {
+            const password = await findPWLogic(targetId, targetEmail); // 👈 모듈 함수 호출
+            
+            if(password) {
+                 resultBox.innerHTML = `
+                    <div class="text-center">
+                        <p class="text-sm text-gray-500 mb-2">회원님의 비밀번호는</p>
+                        <b class="text-[var(--volt)] text-2xl block mb-6">${password}</b>
+                        <button onclick="closeModal('modal-find')" class="w-full bg-[var(--volt)] text-white font-bold py-3 rounded-xl hover:opacity-80 transition-colors">
+                            로그인 하러 가기
+                        </button>
+                    </div>
+                `;
+            } else {
+                 resultBox.innerHTML = `<span style="color:#ef4444">비밀번호 정보 없음.</span>`;
+            }
+        } catch(e) {
+            alert("오류: " + e.message);
+            resultBox.innerHTML = `<span style="color:#ef4444">${e.message}</span>`;
+        }
+    };
+
+    // --- 기타 UI 함수 (그대로 유지) ---
+    window.openModal = (id) => document.getElementById(id).style.display = 'flex';
+    window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+    window.switchTab = (tab) => {
+        document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(`tab-${tab}`).style.display = 'block';
+        document.getElementById(`btn-${tab}`).classList.add('active');
+    }
+
+    window.onload = () => {
+        const y = document.getElementById('reg-year');
+        const m = document.getElementById('reg-month');
+        const d = document.getElementById('reg-day');
+        const curr = new Date().getFullYear();
+        for(let i=curr; i>=1950; i--) y.add(new Option(i+'년', i));
+        for(let i=1; i<=12; i++) m.add(new Option(i+'월', i));
+        for(let i=1; i<=31; i++) d.add(new Option(i+'일', i));
+    }
+</script>
+</head>
+<body class="flex justify-center h-screen w-full bg-[var(--bg-main)] text-[var(--text-main)]">
+
+    <div class="w-full max-w-md h-full relative overflow-hidden bg-[var(--bg-main)] shadow-2xl">
+        <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1516724562728-afc824a36e84?q=80&w=1000')] bg-cover bg-center opacity-10"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-white/20 via-white/80 to-[#f0f4f8]"></div>
+
+        <div id="login-screen" class="relative z-10 w-full h-full flex flex-col items-center justify-center p-6 text-center">
+            <h1 class="text-5xl font-sport font-black italic tracking-tighter text-[var(--text-main)] mb-2">
+                POKE<span class="text-[var(--volt)]">RUN</span>
+            </h1>
+            <p class="text-[var(--text-sub)] mb-10 text-sm">Run, Battle, and Socialize.</p>
+
+            <div class="w-full space-y-3">
+                <input type="email" id="login-email" class="input-dark" placeholder="이메일">
+                <input type="password" id="login-pw" class="input-dark" placeholder="비밀번호">
+                
+                <button onclick="handleLogin()" class="w-full bg-[var(--volt)] text-white font-bold py-3.5 rounded-xl hover:opacity-90 transition-opacity mt-2 shadow-md">
+                    로그인
+                </button>
+
+                <div class="flex justify-between text-xs text-[var(--text-sub)] px-1 mt-2">
+                    <button onclick="openModal('modal-find'); switchTab('id');" class="hover:text-[var(--text-main)]">아이디/비번 찾기</button>
+                    <button onclick="openModal('modal-signup')" class="hover:text-[var(--volt)] font-bold">회원가입</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-signup" class="modal-overlay">
+        <div class="modal-content scrollbar-hide">
+            <div class="flex justify-between items-center mb-6 border-b border-[var(--border-color)] pb-2">
+                <h2 class="text-xl font-bold">회원가입</h2>
+                <button onclick="closeModal('modal-signup')" class="text-[var(--text-sub)] text-xl">✕</button>
+            </div>
+            
+            <div class="space-y-2">
+                <div class="input-group">
+                    <label class="text-xs text-[var(--text-sub)] block mb-1">이메일 (로그인용)</label>
+                    <input type="email" id="reg-email" class="input-dark" placeholder="example@email.com">
+                </div>
+                
+                <div class="input-group">
+                    <label class="text-xs text-[var(--text-sub)] block mb-1">아이디</label>
+                    <input type="text" id="reg-custom-id" class="input-dark" placeholder="4자 이상">
+                    <button class="btn-check" onclick="checkDuplicateID()">중복확인</button>
+                    <p id="msg-id" class="msg-validate"></p>
+                </div>
+
+                <div class="input-group">
+                    <label class="text-xs text-[var(--text-sub)] block mb-1">닉네임</label>
+                    <input type="text" id="reg-nick" class="input-dark" placeholder="2자 이상">
+                    <button class="btn-check" onclick="checkDuplicateNick()">중복확인</button>
+                    <p id="msg-nick" class="msg-validate"></p>
+                </div>
+
+                <div class="input-group">
+                    <label class="text-xs text-[var(--text-sub)] block mb-1">비밀번호</label>
+                    <input type="password" id="reg-pw" class="input-dark" placeholder="6자리 이상" oninput="checkPwMatch()">
+                </div>
+
+                <div class="input-group">
+                    <label class="text-xs text-[var(--text-sub)] block mb-1">비밀번호 확인</label>
+                    <input type="password" id="reg-pw2" class="input-dark" placeholder="재입력" oninput="checkPwMatch()">
+                    <p id="msg-pw" class="msg-validate"></p>
+                </div>
+
+                <div class="input-group">
+                    <label class="text-xs text-[var(--text-sub)] block mb-1">생년월일</label>
+                    <div class="flex gap-2">
+                        <select id="reg-year" class="input-dark w-full"></select>
+                        <select id="reg-month" class="input-dark w-full"></select>
+                        <select id="reg-day" class="input-dark w-full"></select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="input-group">
+                        <label class="text-xs text-[var(--text-sub)] block mb-1">이름</label>
+                        <input type="text" id="reg-name" class="input-dark">
+                    </div>
+                    <div class="input-group">
+                        <label class="text-xs text-[var(--text-sub)] block mb-1">전화번호</label>
+                        <input type="text" id="reg-phone" class="input-dark">
+                    </div>
+                </div>
+
+                <button onclick="handleSignup()" class="w-full bg-[var(--volt)] text-white font-bold py-3 rounded-xl mt-2 shadow-md">가입 완료</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-find" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">계정 찾기</h2>
+                <button onclick="closeModal('modal-find')" class="text-[var(--text-sub)] text-xl">✕</button>
+            </div>
+
+            <div class="flex mb-4">
+                <div id="btn-id" class="tab-btn active" onclick="switchTab('id')">아이디 찾기</div>
+                <div id="btn-pw" class="tab-btn" onclick="switchTab('pw')">비밀번호 찾기</div>
+            </div>
+
+            <div id="tab-id" class="tab-content">
+                <p class="text-xs text-[var(--text-sub)] mb-2">가입 이메일</p>
+                <input type="email" id="find-id-email" class="input-dark mb-3" placeholder="email@example.com">
+                <button onclick="findID()" class="w-full bg-[var(--volt)] text-white font-bold py-3 rounded-xl shadow-md">확인</button>
+                <div id="find-result-text-id" class="mt-4 text-center text-sm border border-[var(--border-color)] p-3 rounded-lg find-result-box">
+                    결과 표시
+                </div>
+            </div>
+
+            <div id="tab-pw" class="tab-content" style="display:none;">
+                <p class="text-xs text-[var(--text-sub)] mb-2">아이디 & 이메일</p>
+                <input type="text" id="find-pw-id" class="input-dark mb-2" placeholder="아이디">
+                <input type="email" id="find-pw-email" class="input-dark mb-3" placeholder="이메일">
+                <button onclick="findPW()" class="w-full bg-[var(--volt)] text-white font-bold py-3 rounded-xl shadow-md">확인</button>
+                <div id="find-result-text-pw" class="mt-4 text-center text-sm border border-[var(--border-color)] p-3 rounded-lg find-result-box">
+                    결과 표시
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
