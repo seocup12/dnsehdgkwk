@@ -215,28 +215,62 @@
         };
 
         const app = {
-            init: () => {
-                if(state.inventory.length === 0) {
+            saveData: () => {
+        if (!state.nickname) return;
+        const userRef = window.fb.ref(window.fb.db, 'users/' + state.nickname + '/userData');
+        window.fb.update(userRef, {
+            coins: state.coins,
+            inventory: state.inventory,
+            team: state.team,
+            lastSave: Date.now()
+        });
+    },
+            init: async () => {
+                const myId = state.nickname;
+                let loaded = false;
+
+                // 1. 서버에서 데이터(포켓몬, 돈) 가져오기
+                if (myId) {
+                    try {
+                        const snapshot = await window.fb.get(window.fb.ref(window.fb.db, 'users/' + myId + '/userData'));
+                        if (snapshot.exists()) {
+                            const data = snapshot.val();
+                            state.coins = data.coins || 0;
+                            state.inventory = data.inventory || [];
+                            state.team = data.team || [null, null, null];
+                            loaded = true;
+                            showToast(`${myId}님의 데이터를 불러왔습니다!`);
+                        }
+                    } catch (e) { console.error(e); }
+                }
+
+                // 2. 데이터가 없으면(첫 시작이면) 기본 포켓몬 지급
+                if (!loaded && state.inventory.length === 0) {
                     app.addPokemon({id: 25, name: 'Pikachu', type: 'electric', rank: 'A', hp: 100, atk: 55, move: 'Thunderbolt'}, true);
                     app.addPokemon({id: 6, name: 'Charizard', type: 'fire', rank: 'S', hp: 160, atk: 90, move: 'Flamethrower'}, true);
                     app.addPokemon({id: 9, name: 'Blastoise', type: 'water', rank: 'A', hp: 140, atk: 75, move: 'Hydro Pump'}, true);
                     state.team = [state.inventory[1], state.inventory[0], state.inventory[2]];
+                    state.coins = 5000;
+                    app.saveData(); // 바로 저장
                 }
+
                 app.updateCoins(0);
                 app.nav('lobby');
             },
 
             addPokemon: (pkm, silent=false) => {
-                pkm.uid = Date.now() + Math.random();
-                pkm.sprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${pkm.id}.gif`;
-                pkm.static = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pkm.id}.png`;
-                pkm.level = 1;
-                pkm.maxHp = pkm.hp;
-                pkm.currentHp = pkm.hp;
-                if(!pkm.move) pkm.move = 'Tackle';
-                state.inventory.push(pkm);
-                if(!silent) showToast(`Got ${pkm.name}!`);
-            },
+        pkm.uid = Date.now() + Math.random();
+        pkm.sprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${pkm.id}.gif`;
+        pkm.static = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pkm.id}.png`;
+        pkm.level = 1;
+        pkm.maxHp = pkm.hp;
+        pkm.currentHp = pkm.hp;
+        if(!pkm.move) pkm.move = 'Tackle';
+        state.inventory.push(pkm);
+        if(!silent) showToast(`Got ${pkm.name}!`);
+        
+        app.saveData(); // 저장 기능 추가됨
+    },
 
             updateCoins: (amt) => {
                 state.coins += amt;
