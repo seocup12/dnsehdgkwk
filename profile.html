@@ -112,17 +112,8 @@
             </button>
         </div>
 
-        <div id="tab-content-posts" class="bg-white min-h-[50vh]">
-            <div id="my-post-grid" class="grid grid-cols-3 gap-0.5">
-                </div>
-            <div id="no-posts-msg" class="hidden py-20 text-center text-gray-400">
-                <div class="w-16 h-16 rounded-full border-2 border-gray-300 flex items-center justify-center mx-auto mb-4">
-                    <i data-lucide="camera" class="w-8 h-8"></i>
-                </div>
-                <p class="text-lg font-bold text-black">사진 공유</p>
-                <p class="text-sm mt-1">사진을 공유하면 프로필에 표시됩니다.</p>
-            </div>
-        </div>
+        <div id="tab-content-posts" class="w-full px-0.5 mt-2 min-h-[200px]">
+</div>
 
         <div id="tab-content-reels" class="hidden h-full">
             <iframe src="h_profile.html" style="width:100%;height:100%;min-height:80vh;border:none"></iframe>
@@ -406,63 +397,81 @@
     // ==================================================
     // [기능 추가] 내 게시물 보기 & 삭제 (디자인 유지)
     // ==================================================
+     // ==================================================
+    // [최종 수정] 내 게시물 보기 & 삭제 (강제 실행 버전)
+    // ==================================================
     let currentOpenPostId = null;
 
-    // 1. 로그인 되면 자동으로 게시물 로드
+    // 1. 로그인 체크 및 실행
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            loadMyPostsOnly(user.uid);
+            // 0.5초 뒤에 실행 (HTML이 다 그려질 때까지 기다림)
+            setTimeout(() => loadMyPostsOnly(user.uid), 500);
         }
     });
 
-    // 2. 게시물 그리드 채우기
+    // 2. 게시물 불러오기
     function loadMyPostsOnly(userId) {
-        // 원래 게시물이 들어갈 자리(탭)를 찾음
-        const postsContainer = document.getElementById('tab-content-posts');
-        if (!postsContainer) return;
+        // 사진 들어갈 자리를 찾음
+        let postsContainer = document.getElementById('tab-content-posts');
+        
+        // [중요] 만약 자리가 없으면, 강제로 만듭니다 (안 나오는 문제 해결)
+        if (!postsContainer) {
+            console.log("사진 박스가 없어서 자동으로 생성합니다.");
+            postsContainer = document.createElement('div');
+            postsContainer.id = 'tab-content-posts';
+            postsContainer.className = 'w-full px-0.5 mt-2 grid grid-cols-3 gap-0.5';
+            // 프로필 정보 아래쯤에 추가 (body의 중간)
+            const profileInfo = document.querySelector('.pokerun-profile-info') || document.body;
+            profileInfo.appendChild(postsContainer);
+        }
 
         onValue(ref(db, 'posts'), (snapshot) => {
             const data = snapshot.val();
             
-            // 그리드 박스를 새로 만듦 (기존 스타일 유지)
+            // 그리드 초기화
             postsContainer.innerHTML = '<div id="my-post-grid" class="grid grid-cols-3 gap-0.5"></div>';
             const grid = document.getElementById('my-post-grid');
 
             if (!data) return;
 
-            // 내 게시물만 필터링 + 최신순 정렬
+            // 내 게시물 필터링
             const myPosts = Object.entries(data)
                 .filter(([key, post]) => post.author === userId || !post.author) 
                 .sort((a, b) => b[1].timestamp - a[1].timestamp);
 
-            // 하나씩 추가
+            if (myPosts.length === 0) {
+                postsContainer.innerHTML += '<p class="text-center text-gray-400 py-10">게시물이 없습니다.</p>';
+                return;
+            }
+
+            // 사진 추가
             myPosts.forEach(([key, post]) => {
                 const imgUrl = post.image || post.imageUrl || post.url;
-                
                 const div = document.createElement('div');
                 div.className = "relative bg-gray-200 cursor-pointer aspect-square overflow-hidden"; 
                 div.onclick = () => openPostModalOnly(post, key);
                 div.innerHTML = `<img src="${imgUrl}" class="w-full h-full object-cover hover:opacity-90 transition">`;
                 grid.appendChild(div);
             });
-
-            // 게시물 개수 표시 (있다면)
+            
+            // 게시물 숫자 업데이트 (있다면)
             const countEl = document.getElementById('post-count');
             if(countEl) countEl.innerText = myPosts.length;
         });
     }
 
-    // 3. 팝업 열기
+    // 3. 팝업 열기 (글자색 검정 강제)
     window.openPostModalOnly = (post, postId) => {
         currentOpenPostId = postId;
         const modal = document.getElementById('post-modal');
-        
-        // 이미지 및 텍스트 넣기
+        if(!modal) return alert("팝업창 HTML이 없습니다. 1단계를 확인하세요.");
+
         document.getElementById('modal-image').src = post.image || post.imageUrl || post.url;
         document.getElementById('modal-content').innerText = post.content || "";
         document.getElementById('modal-date').innerText = post.timestamp ? new Date(post.timestamp).toLocaleDateString() : "";
 
-        // 삭제 버튼: 내 글일 때만 보이기
+        // 삭제 버튼 처리
         const deleteBtn = document.getElementById('delete-post-btn');
         if(currentUser && (post.author === currentUser.uid || !post.author)) {
             deleteBtn.classList.remove('hidden');
@@ -483,13 +492,9 @@
     // 5. 삭제하기
     window.deleteCurrentPost = async () => {
         if(!currentOpenPostId) return;
-        if(confirm("정말로 삭제하시겠습니까?")) {
-            try {
-                await remove(ref(db, `posts/${currentOpenPostId}`));
-                closePostModal();
-            } catch(e) {
-                alert("오류: " + e.message);
-            }
+        if(confirm("삭제하시겠습니까?")) {
+            await remove(ref(db, `posts/${currentOpenPostId}`));
+            closePostModal();
         }
     };
 </script>
