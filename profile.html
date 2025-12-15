@@ -402,32 +402,116 @@
             }
         }
     };
+
+    // ==================================================
+    // [기능 추가] 내 게시물 보기 & 삭제 (디자인 유지)
+    // ==================================================
+    let currentOpenPostId = null;
+
+    // 1. 로그인 되면 자동으로 게시물 로드
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            loadMyPostsOnly(user.uid);
+        }
+    });
+
+    // 2. 게시물 그리드 채우기
+    function loadMyPostsOnly(userId) {
+        // 원래 게시물이 들어갈 자리(탭)를 찾음
+        const postsContainer = document.getElementById('tab-content-posts');
+        if (!postsContainer) return;
+
+        onValue(ref(db, 'posts'), (snapshot) => {
+            const data = snapshot.val();
+            
+            // 그리드 박스를 새로 만듦 (기존 스타일 유지)
+            postsContainer.innerHTML = '<div id="my-post-grid" class="grid grid-cols-3 gap-0.5"></div>';
+            const grid = document.getElementById('my-post-grid');
+
+            if (!data) return;
+
+            // 내 게시물만 필터링 + 최신순 정렬
+            const myPosts = Object.entries(data)
+                .filter(([key, post]) => post.author === userId || !post.author) 
+                .sort((a, b) => b[1].timestamp - a[1].timestamp);
+
+            // 하나씩 추가
+            myPosts.forEach(([key, post]) => {
+                const imgUrl = post.image || post.imageUrl || post.url;
+                
+                const div = document.createElement('div');
+                div.className = "relative bg-gray-200 cursor-pointer aspect-square overflow-hidden"; 
+                div.onclick = () => openPostModalOnly(post, key);
+                div.innerHTML = `<img src="${imgUrl}" class="w-full h-full object-cover hover:opacity-90 transition">`;
+                grid.appendChild(div);
+            });
+
+            // 게시물 개수 표시 (있다면)
+            const countEl = document.getElementById('post-count');
+            if(countEl) countEl.innerText = myPosts.length;
+        });
+    }
+
+    // 3. 팝업 열기
+    window.openPostModalOnly = (post, postId) => {
+        currentOpenPostId = postId;
+        const modal = document.getElementById('post-modal');
+        
+        // 이미지 및 텍스트 넣기
+        document.getElementById('modal-image').src = post.image || post.imageUrl || post.url;
+        document.getElementById('modal-content').innerText = post.content || "";
+        document.getElementById('modal-date').innerText = post.timestamp ? new Date(post.timestamp).toLocaleDateString() : "";
+
+        // 삭제 버튼: 내 글일 때만 보이기
+        const deleteBtn = document.getElementById('delete-post-btn');
+        if(currentUser && (post.author === currentUser.uid || !post.author)) {
+            deleteBtn.classList.remove('hidden');
+        } else {
+            deleteBtn.classList.add('hidden');
+        }
+
+        modal.classList.remove('hidden');
+        if(window.lucide) lucide.createIcons();
+    };
+
+    // 4. 팝업 닫기
+    window.closePostModal = () => {
+        document.getElementById('post-modal').classList.add('hidden');
+        currentOpenPostId = null;
+    };
+
+    // 5. 삭제하기
+    window.deleteCurrentPost = async () => {
+        if(!currentOpenPostId) return;
+        if(confirm("정말로 삭제하시겠습니까?")) {
+            try {
+                await remove(ref(db, `posts/${currentOpenPostId}`));
+                closePostModal();
+            } catch(e) {
+                alert("오류: " + e.message);
+            }
+        }
+    };
 </script>
-<div id="post-modal" class="fixed inset-0 z-50 bg-black/90 hidden flex items-center justify-center p-4 backdrop-blur-sm" onclick="closePostModal()">
-    <div class="w-full max-w-sm bg-white rounded-xl overflow-hidden shadow-2xl border border-gray-200" onclick="event.stopPropagation()">
-        <div class="px-4 py-3 flex items-center justify-between border-b border-gray-200">
-            <div class="flex items-center gap-2">
-                <img id="modal-avatar" class="w-6 h-6 rounded-full bg-gray-200 object-cover">
-                <span id="modal-username" class="font-bold text-sm text-black">Username</span>
-            </div>
-            <button id="delete-post-btn" class="text-red-500 hidden hover:bg-gray-100 p-1 rounded transition" onclick="deleteCurrentPost()">
-                <i data-lucide="trash-2" class="w-5 h-5"></i>
+
+<div id="post-modal" class="fixed inset-0 z-[9999] bg-black/90 hidden flex items-center justify-center p-4 backdrop-blur-sm" onclick="closePostModal()" style="color: black !important;">
+    <div class="w-full max-w-sm bg-white rounded-xl overflow-hidden shadow-2xl relative" onclick="event.stopPropagation()">
+        
+        <div class="px-4 py-3 flex items-center justify-between border-b border-gray-200 bg-white">
+            <button onclick="closePostModal()" class="text-black font-bold text-sm">✕ 닫기</button>
+            
+            <button id="delete-post-btn" class="text-red-600 font-bold hidden flex items-center gap-1 text-sm" onclick="deleteCurrentPost()">
+                <i data-lucide="trash-2" class="w-4 h-4"></i> 삭제
             </button>
         </div>
-        
-        <div class="w-full h-auto bg-black flex items-center justify-center relative min-h-[300px]">
-            <img id="modal-image" class="w-full h-auto object-contain max-h-[70vh]">
+
+        <div class="bg-black flex items-center justify-center min-h-[300px] bg-gray-100">
+            <img id="modal-image" class="w-full h-auto max-h-[60vh] object-contain">
         </div>
 
         <div class="p-4 bg-white">
-            <div class="flex gap-4 mb-3">
-                <div class="flex items-center gap-1">
-                    <i data-lucide="heart" class="w-6 h-6 text-blue-600 fill-blue-600"></i>
-                    <span id="modal-likes" class="font-bold text-sm text-black">0</span>
-                </div>
-            </div>
-            <div id="modal-content" class="text-sm mt-2 text-black"></div>
-            <div id="modal-date" class="text-[10px] text-gray-500 mt-2 uppercase"></div>
+            <p id="modal-content" class="text-sm text-black font-medium mb-2" style="color: black !important;"></p>
+            <p id="modal-date" class="text-xs text-gray-500"></p>
         </div>
     </div>
 </div>
