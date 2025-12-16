@@ -227,7 +227,7 @@
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getDatabase, ref, onValue, push, update, remove, get, child, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // 🟡 [설정] 기본 프로필 이미지
+    // 🟡 [설정] 기본 이미지
     const DEFAULT_AVATAR = "https://cdn-icons-png.flaticon.com/512/847/847969.png"; 
 
     const firebaseConfig = {
@@ -239,18 +239,21 @@
         appId: "1:445300582484:web:f8f1373a3bbf643face5c1" 
     };
 
-    // 앱 초기화
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
 
     // -----------------------------------------------------------
-    // 2. 기능 코드 (안전장치 추가됨)
+    // 2. 전역 변수 설정
     // -----------------------------------------------------------
     let currentUser = null;
     let currentPostId = null;
 
-    // --- 플로팅 버튼 제어 ---
+    // -----------------------------------------------------------
+    // 3. 기능 함수 (window 객체에 등록)
+    // -----------------------------------------------------------
+
+    // [1] 플로팅 버튼 토글
     window.toggleFab = () => {
         const opts = document.getElementById('fabOptions');
         const mainBtn = document.getElementById('fabMainBtn');
@@ -258,22 +261,193 @@
         mainBtn.classList.toggle('active');
     }
 
-    // --- 활동 시트 열기 ---
+    // [2] 활동 시트 열기
     window.openActivitySheet = () => {
         const sheet = document.getElementById('sheet-activity');
         sheet.classList.add('open');
     }
 
-    // --- 게시물 로드 ---
+    // [3] 좋아요 기능
+    window.toggleLike = (postId) => {
+        if(!currentUser) return alert("로그인이 필요합니다.");
+        const icon = document.getElementById(`like-icon-${postId}`);
+        
+        // 화면에서 먼저 반응하게 하기 (UX 향상)
+        if (icon) {
+            if (icon.classList.contains('fill-[var(--volt)]')) {
+                icon.classList.remove('fill-[var(--volt)]', 'text-[var(--volt)]');
+                icon.classList.add('text-[var(--text-main)]');
+            } else {
+                icon.classList.add('fill-[var(--volt)]', 'text-[var(--volt)]');
+                icon.classList.remove('text-[var(--text-main)]');
+            }
+        }
+
+        const postRef = ref(db, `posts/${postId}`);
+        get(postRef).then(snap => {
+            if(snap.exists()){
+                const p = snap.val();
+                let likes = p.likes || {};
+                let count = p.likeCount || 0;
+                
+                if(likes[currentUser.uid]){ 
+                    delete likes[currentUser.uid]; 
+                    count = Math.max(0, count - 1); 
+                } else { 
+                    likes[currentUser.uid] = true; 
+                    count++; 
+                }
+                update(postRef, { likes: likes, likeCount: count });
+            }
+        });
+    };
+
+    // [4] 게시물 삭제
+    window.deletePost = (id) => {
+        if(confirm("정말 삭제하시겠습니까?")) remove(ref(db, `posts/${id}`));
+    };
+
+    // [5] 이미지 확대
+    window.openImageModal = (src) => {
+        const modal = document.createElement('div');
+        modal.className = "fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 anim-pop";
+        modal.onclick = () => modal.remove();
+        modal.innerHTML = `<img src="${src}" class="max-w-full max-h-full rounded-lg shadow-2xl">`;
+        document.body.appendChild(modal);
+    };
+
+    // [6] 댓글 창 열기 (여기가 완전히 바뀐 부분)
+    window.openComments = (postId) => {
+        console.log("댓글 창 열기 시도:", postId); // 디버깅용
+        currentPostId = postId;
+        
+        const sheet = document.getElementById('sheet-reply');
+        const list = document.getElementById('reply-list');
+        const countHeader = document.getElementById('reply-count-header');
+
+        if(!sheet || !list) {
+            console.error("HTML 요소를 찾을 수 없습니다. (id 확인 필요)");
+            return;
+        }
+
+        // 시트 열기
+        sheet.classList.add('open');
+        document.body.style.overflow = 'hidden';
+
+        // 기존 리스너가 중복되지 않게 (onValue는 계속 수신하므로) 리셋은 안함.
+        // 대신 리스트를 비우고 새로 받아옵니다.
+        
+        onValue(ref(db, `posts/${postId}/comments`), (snap) => {
+            list.innerHTML = ""; // 기존 목록 초기화
+            const commentsData = snap.val();
+            
+            if (!commentsData) {
+                list.innerHTML = `<div class="text-center py-10 text-gray-400">첫 번째 댓글을 남겨보세요!</div>`;
+                if(countHeader) countHeader.innerText = "0";
+                return;
+            }
+
+            const comments = Object.entries(commentsData).map(([key, val]) => ({id: key, ...val}));
+            if(countHeader) countHeader.innerText = comments.length;
+
+            console.log("받아온 댓글 목록:", comments); // 디버깅용
+
+            // 🟢 [핵심] innerHTML 대신 createElement 사용 (오류 원천 차단)
+            comments.forEach((c) => {
+                // 1. 컨테이너
+                const itemDiv = document.createElement('div');
+                itemDiv.className = "flex gap-3 mb-4 pb-3 border-b border-[var(--border-color)] last:border-0";
+
+                // 2. 프로필 이미지
+                const img = document.createElement('img');
+                img.src = c.userAvatar || DEFAULT_AVATAR;
+                img.className = "w-8 h-8 rounded-full bg-gray-100 object-cover flex-shrink-0 border border-gray-200";
+                
+                // 3. 텍스트 영역
+                const textDiv = document.createElement('div');
+                textDiv.className = "flex-1";
+
+                // 4. 이름과 시간
+                const infoDiv = document.createElement('div');
+                infoDiv.className = "flex justify-between items-start mb-1";
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.className = "text-sm font-bold text-[var(--text-main)]";
+                nameSpan.textContent = c.userName || "익명";
+
+                const timeSpan = document.createElement('span');
+                timeSpan.className = "text-[10px] text-[var(--text-sub)]";
+                timeSpan.textContent = c.timestamp ? new Date(c.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "";
+
+                infoDiv.appendChild(nameSpan);
+                infoDiv.appendChild(timeSpan);
+
+                // 5. 댓글 내용 (특수문자 있어도 안전함)
+                const contentDiv = document.createElement('div');
+                contentDiv.className = "text-sm text-[var(--text-main)] leading-relaxed";
+                contentDiv.textContent = c.text || "";
+
+                // 조립
+                textDiv.appendChild(infoDiv);
+                textDiv.appendChild(contentDiv);
+                itemDiv.appendChild(img);
+                itemDiv.appendChild(textDiv);
+
+                // 리스트에 추가
+                list.appendChild(itemDiv);
+            });
+        });
+    };
+
+    // [7] 시트 닫기
+    window.closeSheet = (id) => {
+        const sheet = document.getElementById(id);
+        if(sheet) sheet.classList.remove('open');
+        document.body.style.overflow = '';
+        if(id === 'sheet-reply') currentPostId = null;
+    };
+
+    // [8] 댓글 추가 (보안 강화)
+    window.addComment = () => {
+        if(!currentPostId) return alert("오류: 게시물을 찾을 수 없습니다.");
+        if(!currentUser) return alert("로그인 후 이용 가능합니다.");
+        
+        const input = document.getElementById('reply-input');
+        const text = input.value.trim();
+        
+        if(!text) return;
+
+        const newComment = {
+            userId: currentUser.uid,
+            userName: currentUser.displayName || '익명',
+            userAvatar: currentUser.photoURL || DEFAULT_AVATAR,
+            text: text,
+            timestamp: Date.now()
+        };
+
+        push(ref(db, `posts/${currentPostId}/comments`), newComment)
+            .then(() => {
+                console.log("댓글 전송 성공");
+                input.value = "";
+            })
+            .catch((err) => {
+                alert("댓글 저장 실패: " + err.message);
+                console.error(err);
+            });
+    };
+
+    // -----------------------------------------------------------
+    // 4. 메인: 게시물 목록 로드
+    // -----------------------------------------------------------
     const postsRef = ref(db, 'posts');
     const postsList = document.getElementById('posts-list');
     const loadingSpinner = document.getElementById('loading-spinner');
 
     onValue(postsRef, (snapshot) => {
         if(loadingSpinner) loadingSpinner.style.display = 'none';
-        postsList.innerHTML = "";
-        const data = snapshot.val();
+        postsList.innerHTML = ""; // 초기화
         
+        const data = snapshot.val();
         if (!data) {
             postsList.innerHTML = "<div class='p-10 text-center text-gray-400'>게시물이 없습니다.</div>";
             return;
@@ -282,18 +456,17 @@
         const posts = Object.entries(data).reverse(); 
 
         posts.forEach(([id, post]) => {
-            // 좋아요 여부 체크
+            // 좋아요 체크
             let likeClass = "text-[var(--text-main)]"; 
             if (currentUser && post.likes && post.likes[currentUser.uid]) {
                 likeClass = "fill-[var(--volt)] text-[var(--volt)]";
             }
 
-            // 댓글 개수
+            // 댓글 수
             const commentCount = post.comments ? Object.keys(post.comments).length : 0;
-            
-            // 작성자 이미지 안전장치
-            const authorImg = post.authorAvatar ? post.authorAvatar : DEFAULT_AVATAR;
+            const authorImg = post.authorAvatar || DEFAULT_AVATAR;
 
+            // HTML 생성
             const html = `
             <div class="bg-[var(--bg-card)] rounded-2xl p-5 mb-4 shadow-sm border border-[var(--border-color)]">
                 <div class="flex items-center gap-3 mb-4">
@@ -344,144 +517,25 @@
             postsList.insertAdjacentHTML('beforeend', html);
         });
         
-        lucide.createIcons();
+        // 아이콘 렌더링
+        if(window.lucide) window.lucide.createIcons();
     });
 
-    // 3. 좋아요 & 삭제 기능
-    window.toggleLike = (postId) => {
-        if(!currentUser) return alert("로그인이 필요합니다.");
-        const icon = document.getElementById(`like-icon-${postId}`);
-        const isLiked = icon.classList.contains('fill-[var(--volt)]');
-        
-        if (icon) {
-            if (isLiked) {
-                icon.classList.remove('fill-[var(--volt)]', 'text-[var(--volt)]');
-                icon.classList.add('text-[var(--text-main)]');
-            } else {
-                icon.classList.add('fill-[var(--volt)]', 'text-[var(--volt)]');
-                icon.classList.remove('text-[var(--text-main)]');
-            }
-        }
-        const postRef = ref(db, `posts/${postId}`);
-        get(postRef).then(snap => {
-            if(snap.exists()){
-                const p = snap.val();
-                let likes = p.likes || {};
-                let count = p.likeCount || 0;
-                if(likes[currentUser.uid]){ delete likes[currentUser.uid]; count--; } 
-                else { likes[currentUser.uid] = true; count++; }
-                update(postRef, { likes: likes, likeCount: count });
-            }
-        });
-    };
-
-    window.deletePost = (id) => {
-        if(confirm("정말 삭제하시겠습니까?")) remove(ref(db, `posts/${id}`));
-    };
-
-    window.openImageModal = (src) => {
-        const modal = document.createElement('div');
-        modal.className = "fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 anim-pop";
-        modal.onclick = () => modal.remove();
-        modal.innerHTML = `<img src="${src}" class="max-w-full max-h-full rounded-lg shadow-2xl">`;
-        document.body.appendChild(modal);
-    };
-
-    // --- 댓글 (Bottom Sheet) - 여기가 핵심 수정 부분 ---
-    window.openComments = (postId) => {
-        currentPostId = postId;
-        const sheet = document.getElementById('sheet-reply');
-        sheet.classList.add('open');
-        document.body.style.overflow = 'hidden';
-
-        onValue(ref(db, `posts/${postId}/comments`), (snap) => {
-            const list = document.getElementById('reply-list');
-            list.innerHTML = "";
-            const comments = [];
-            
-            snap.forEach(c => comments.push({id: c.key, ...c.val()}));
-            
-            // 콘솔창에 데이터 들어오는지 확인 (F12)
-            console.log("댓글 데이터 수신:", comments.length, "개", comments);
-
-            const countHeader = document.getElementById('reply-count-header');
-            if(countHeader) countHeader.innerText = comments.length;
-
-            if(comments.length === 0) {
-                list.innerHTML = `<div class="text-center py-10 text-gray-400">첫 번째 댓글을 남겨보세요!</div>`;
-            } else {
-                let allCommentsHtml = "";
-                comments.forEach((c, index) => {
-                    try {
-                        const borderClass = index < comments.length - 1 ? "border-b border-[var(--border-color)] pb-3 mb-3" : "pb-1 mb-1";
-                        
-                        // 🟡 [수정] 데이터가 조금이라도 이상하면 기본값 사용 (안전장치)
-                        const commenterImg = c.userAvatar ? c.userAvatar : DEFAULT_AVATAR;
-                        const commenterName = c.userName ? c.userName : '익명';
-                        const commentText = c.text ? c.text : '내용 없음';
-                        const timeString = c.timestamp ? new Date(c.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
-
-                        // 🟡 [수정] HTML 생성 시 오류 원인(오타) 완전 제거됨
-                        allCommentsHtml += `
-                        <div class="flex gap-3 ${borderClass}">
-                            <img src="${commenterImg}" class="w-8 h-8 rounded-full bg-gray-100 object-cover flex-shrink-0 border border-gray-200">
-                            <div class="flex-1">
-                                <div class="flex justify-between items-start mb-1">
-                                    <span class="text-sm font-bold text-[var(--text-main)]">${commenterName}</span>
-                                    <span class="text-[10px] text-[var(--text-sub)]">${timeString}</span>
-                                </div>
-                                <div class="text-sm text-[var(--text-main)] leading-relaxed">${commentText}</div>
-                            </div>
-                        </div>`;
-                    } catch (err) {
-                        console.error("댓글 하나 그리기 실패(무시함):", err);
-                    }
-                });
-                list.innerHTML = allCommentsHtml;
-            }
-        });
-    };
-
-    window.closeSheet = (id) => {
-        const sheet = document.getElementById(id);
-        if(sheet) sheet.classList.remove('open');
-        document.body.style.overflow = '';
-        if(id === 'sheet-reply') currentPostId = null;
-    };
-
-    window.addComment = () => {
-        if(!currentPostId || !currentUser) return alert("로그인 후 이용 가능합니다.");
-        const input = document.getElementById('reply-input');
-        const text = input.value.trim();
-        if(!text) return;
-
-        push(ref(db, `posts/${currentPostId}/comments`), {
-            userId: currentUser.uid,
-            userName: currentUser.displayName || '익명',
-            userAvatar: currentUser.photoURL || "", 
-            text: text,
-            timestamp: Date.now()
-        }).then(() => {
-            input.value = "";
-        });
-    };
-
-    // --- 로그인 상태 감지 ---
+    // -----------------------------------------------------------
+    // 5. 로그인 상태 감지 및 드래그 설정
+    // -----------------------------------------------------------
     onAuthStateChanged(auth, (user) => {
         if (user) {
             currentUser = user;
-            // 🟡 [수정] 내 프로필 이미지 설정 (없으면 기본 캐릭터)
             const myAvatar = document.getElementById('my-avatar-input');
-            if(myAvatar) {
-                myAvatar.src = user.photoURL ? user.photoURL : DEFAULT_AVATAR;
-            }
+            if(myAvatar) myAvatar.src = user.photoURL || DEFAULT_AVATAR;
         } else {
             currentUser = null;
             location.href = "log.html";
         }
     });
 
-    // --- Bottom Sheet 드래그 기능 ---
+    // 바텀 시트 드래그 로직
     setupBottomSheet('sheet-reply', 'reply-list');
     setupBottomSheet('sheet-activity', 'activity-list');
     
@@ -511,7 +565,7 @@
                 sheet.style.transform = `translateY(${delta}px)`;
             }
         });
-        sheet.addEventListener('touchend', () => handleDragEnd());
+        sheet.addEventListener('touchend', handleDragEnd);
         sheet.addEventListener('mousedown', (e) => {
             if (list && list.contains(e.target) && list.scrollTop > 0) return;
             touchStart = e.clientY;
