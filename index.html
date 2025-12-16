@@ -220,30 +220,11 @@
 
     <script type="module" src="layout.js"></script>
     <script type="module">
-    // -----------------------------------------------------------
-    // 1. 파이어베이스 설정 (완성됨!)
-    // -----------------------------------------------------------
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getDatabase, ref, onValue, push, update, remove, get, child, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    // ⭐️ 중요: config.js에서 로그인(auth)과 데이터베이스(db)를 가져옵니다.
+    import { auth, db } from "./config.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { ref, onValue, push, update, remove, get, child, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyAbHwLLXIH8rBQ8gNMVqE5SE208aIbfFZ0",
-        authDomain: "pokbattle.firebaseapp.com",
-        databaseURL: "https://pokbattle-default-rtdb.firebaseio.com",
-        projectId: "pokbattle",
-        storageBucket: "pokbattle.firebasestorage.app",
-        appId: "1:445300582484:web:f8f1373a3bbf643face5c1" 
-    };
-
-    // 앱 초기화
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getDatabase(app);
-
-    // -----------------------------------------------------------
-    // 2. 기능 코드 (좋아요, 댓글, 게시물 등)
-    // -----------------------------------------------------------
     let currentUser = null;
     let currentPostId = null;
 
@@ -255,9 +236,11 @@
         mainBtn.classList.toggle('active');
         
         const icon = mainBtn.querySelector('i');
+        // createIcons가 다시 실행되어야 아이콘이 바뀔 수 있음. 텍스트 변경 대신 처리 필요
+        // 여기서는 간단히 클래스 토글만 유지
     }
 
-    // --- 활동 시트 열기 ---
+    // --- 활동 시트 열기 (누락된 함수 추가) ---
     window.openActivitySheet = () => {
         const sheet = document.getElementById('sheet-activity');
         sheet.classList.add('open');
@@ -293,7 +276,7 @@
             <div class="bg-[var(--bg-card)] rounded-2xl p-5 mb-4 shadow-sm border border-[var(--border-color)]">
                 <div class="flex items-center gap-3 mb-4">
                     <div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
-                        <img src="${post.authorAvatar || 'https://cdn-icons-png.flaticon.com/512/287/287221.png'}" class="w-full h-full object-cover">
+                        <img src="${post.authorAvatar || 'https://cdn-icons-png.flaticon.com/512/287/287221.png'}"}" class="w-full h-full object-cover">
                     </div>
                     <div>
                         <div class="font-bold text-[var(--text-main)]">${post.authorName || 'User'}</div>
@@ -399,6 +382,7 @@
         currentPostId = postId;
         const sheet = document.getElementById('sheet-reply');
         
+        // [수정] visible 대신 open 클래스 사용 (CSS와 일치시킴)
         sheet.classList.add('open');
         document.body.style.overflow = 'hidden'; // 배경 스크롤 막기
 
@@ -422,7 +406,7 @@
                     
                     allCommentsHtml += `
                     <div class="flex gap-3 ${borderClass}">
-                        <img src="${c.userAvatar || 'https://cdn-icons-png.flaticon.com/512/287/287221.png'}" class="w-8 h-8 rounded-full bg-gray-200 object-cover flex-shrink-0">
+                        <img src="${c.userAvatar || 'https://cdn-icons-png.flaticon.com/512/287/287221.png'}"}" class="w-8 h-8 rounded-full bg-gray-200 object-cover flex-shrink-0">
                         <div class="flex-1">
                             <div class="flex justify-between items-start mb-1">
                                 <span class="text-sm font-bold text-[var(--text-main)]">${c.userName}</span>
@@ -445,6 +429,7 @@
         if(id === 'sheet-reply') currentPostId = null;
     };
 
+    // [중요] 함수명 HTML과 일치시킴 (addReply -> addComment)
     window.addComment = () => {
         if(!currentPostId || !currentUser) return alert("로그인 후 이용 가능합니다.");
         const input = document.getElementById('reply-input');
@@ -469,7 +454,7 @@
             console.log("Logged in:", user.email);
             // 내 아바타 설정
             const myAvatar = document.getElementById('my-avatar-input');
-            if(myAvatar) myAvatar.src = user.photoURL || 'https://cdn-icons-png.flaticon.com/512/287/287221.png';
+            if(myAvatar) myAvatar.src = user.photoURL || 'https://cdn-icons-png.flaticon.com/512/287/287221.png';;
         } else {
             currentUser = null;
             location.href = "log.html";
@@ -478,12 +463,18 @@
 
     // --- Bottom Sheet 드래그 기능 (모바일 UX) ---
     setupBottomSheet('sheet-reply', 'reply-list');
-    setupBottomSheet('sheet-activity', 'activity-list');
+    setupBottomSheet('sheet-activity', 'activity-list'); // 활동 시트도 적용
     
     function setupBottomSheet(sheetId, listId) {
+        const sheetOverlay = document.getElementById(sheetId); // Overlay 자체를 시트로 간주하거나 구조에 따라 조정
+        // CSS 구조상: #sheet-reply(overlay) -> #sheet-modal(sheet)
+        // 여기서는 #sheet-modal을 드래그 대상으로 잡아야 함
+        
+        // 구조에 맞게 요소 찾기
         const overlay = document.getElementById(sheetId);
         if(!overlay) return;
         
+        // overlay 안에 있는 실제 하얀색 시트 찾기 (.bottom-sheet)
         const sheet = overlay.querySelector('.bottom-sheet');
         const list = document.getElementById(listId);
         
@@ -523,6 +514,7 @@
             if (delta > 0) sheet.style.transform = `translateY(${delta}px)`;
         });
         
+        // [중요] 🔴 문법 오류 수정 (괄호 제거)
         window.addEventListener('mouseup', () => {
             if(isDragging) handleDragEnd(); 
         });
@@ -532,18 +524,22 @@
             sheet.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'; 
             const delta = touchCurrent - touchStart;
             if (delta > 120) {
+                // 닫기 동작
                 overlay.classList.remove('open');
+                
+                // 애니메이션 후 초기화
                 setTimeout(() => { 
                     sheet.style.transform = ''; 
                     if(sheetId === 'sheet-reply') currentPostId = null;
                 }, 300);
             } else {
+                // 복귀 동작
                 sheet.style.transform = ''; 
             }
             touchStart = 0; touchCurrent = 0;
         }
     }
-</script>
+    </script>
 </body>
 
 </html>
