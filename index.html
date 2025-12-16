@@ -221,7 +221,7 @@
     <script type="module" src="layout.js"></script>
     <script type="module">
     // -----------------------------------------------------------
-    // 1. 파이어베이스 설정
+    // 1. 파이어베이스 설정 (님 ID 적용됨)
     // -----------------------------------------------------------
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -244,13 +244,13 @@
     const db = getDatabase(app);
 
     // -----------------------------------------------------------
-    // 2. 전역 변수 설정
+    // 2. 전역 변수
     // -----------------------------------------------------------
     let currentUser = null;
     let currentPostId = null;
 
     // -----------------------------------------------------------
-    // 3. 기능 함수 (window 객체에 등록)
+    // 3. 기능 함수 (window 등록)
     // -----------------------------------------------------------
 
     // [1] 플로팅 버튼 토글
@@ -272,7 +272,6 @@
         if(!currentUser) return alert("로그인이 필요합니다.");
         const icon = document.getElementById(`like-icon-${postId}`);
         
-        // 화면에서 먼저 반응하게 하기 (UX 향상)
         if (icon) {
             if (icon.classList.contains('fill-[var(--volt)]')) {
                 icon.classList.remove('fill-[var(--volt)]', 'text-[var(--volt)]');
@@ -316,29 +315,20 @@
         document.body.appendChild(modal);
     };
 
-    // [6] 댓글 창 열기 (여기가 완전히 바뀐 부분)
+    // [6] 댓글 창 열기 (안전한 DOM 방식 유지)
     window.openComments = (postId) => {
-        console.log("댓글 창 열기 시도:", postId); // 디버깅용
         currentPostId = postId;
-        
         const sheet = document.getElementById('sheet-reply');
         const list = document.getElementById('reply-list');
         const countHeader = document.getElementById('reply-count-header');
 
-        if(!sheet || !list) {
-            console.error("HTML 요소를 찾을 수 없습니다. (id 확인 필요)");
-            return;
-        }
+        if(!sheet || !list) return;
 
-        // 시트 열기
         sheet.classList.add('open');
         document.body.style.overflow = 'hidden';
 
-        // 기존 리스너가 중복되지 않게 (onValue는 계속 수신하므로) 리셋은 안함.
-        // 대신 리스트를 비우고 새로 받아옵니다.
-        
         onValue(ref(db, `posts/${postId}/comments`), (snap) => {
-            list.innerHTML = ""; // 기존 목록 초기화
+            list.innerHTML = ""; 
             const commentsData = snap.val();
             
             if (!commentsData) {
@@ -350,24 +340,18 @@
             const comments = Object.entries(commentsData).map(([key, val]) => ({id: key, ...val}));
             if(countHeader) countHeader.innerText = comments.length;
 
-            console.log("받아온 댓글 목록:", comments); // 디버깅용
-
-            // 🟢 [핵심] innerHTML 대신 createElement 사용 (오류 원천 차단)
-            comments.forEach((c) => {
-                // 1. 컨테이너
+            comments.forEach((c, index) => {
                 const itemDiv = document.createElement('div');
-                itemDiv.className = "flex gap-3 mb-4 pb-3 border-b border-[var(--border-color)] last:border-0";
+                const borderClass = index < comments.length - 1 ? "border-b border-[var(--border-color)] pb-3 mb-3" : "pb-1 mb-1";
+                itemDiv.className = `flex gap-3 ${borderClass}`;
 
-                // 2. 프로필 이미지
                 const img = document.createElement('img');
                 img.src = c.userAvatar || DEFAULT_AVATAR;
                 img.className = "w-8 h-8 rounded-full bg-gray-100 object-cover flex-shrink-0 border border-gray-200";
                 
-                // 3. 텍스트 영역
                 const textDiv = document.createElement('div');
                 textDiv.className = "flex-1";
 
-                // 4. 이름과 시간
                 const infoDiv = document.createElement('div');
                 infoDiv.className = "flex justify-between items-start mb-1";
                 
@@ -382,18 +366,15 @@
                 infoDiv.appendChild(nameSpan);
                 infoDiv.appendChild(timeSpan);
 
-                // 5. 댓글 내용 (특수문자 있어도 안전함)
                 const contentDiv = document.createElement('div');
                 contentDiv.className = "text-sm text-[var(--text-main)] leading-relaxed";
                 contentDiv.textContent = c.text || "";
 
-                // 조립
                 textDiv.appendChild(infoDiv);
                 textDiv.appendChild(contentDiv);
                 itemDiv.appendChild(img);
                 itemDiv.appendChild(textDiv);
 
-                // 리스트에 추가
                 list.appendChild(itemDiv);
             });
         });
@@ -407,7 +388,7 @@
         if(id === 'sheet-reply') currentPostId = null;
     };
 
-    // [8] 댓글 추가 (보안 강화)
+    // [8] 댓글 추가 (⭐⭐ 여기가 수정됨: DB에서 진짜 닉네임 가져오기)
     window.addComment = () => {
         if(!currentPostId) return alert("오류: 게시물을 찾을 수 없습니다.");
         if(!currentUser) return alert("로그인 후 이용 가능합니다.");
@@ -417,23 +398,31 @@
         
         if(!text) return;
 
-        const newComment = {
-            userId: currentUser.uid,
-            userName: currentUser.displayName || '익명',
-            userAvatar: currentUser.photoURL || DEFAULT_AVATAR,
-            text: text,
-            timestamp: Date.now()
-        };
+        // 1. DB에서 내 정보(users/내ID) 먼저 조회
+        const userRef = ref(db, `users/${currentUser.uid}`);
+        
+        get(userRef).then((snapshot) => {
+            const userData = snapshot.val();
+            // DB에 닉네임이 있으면 그거 쓰고, 없으면 기본값 사용
+            const realNickname = (userData && userData.nickname) ? userData.nickname : (currentUser.displayName || '익명');
 
-        push(ref(db, `posts/${currentPostId}/comments`), newComment)
-            .then(() => {
-                console.log("댓글 전송 성공");
-                input.value = "";
-            })
-            .catch((err) => {
-                alert("댓글 저장 실패: " + err.message);
-                console.error(err);
-            });
+            const newComment = {
+                userId: currentUser.uid,
+                userName: realNickname, // ✅ 여기서 진짜 닉네임 사용
+                userAvatar: currentUser.photoURL || DEFAULT_AVATAR,
+                text: text,
+                timestamp: Date.now()
+            };
+
+            // 2. 댓글 저장
+            push(ref(db, `posts/${currentPostId}/comments`), newComment)
+                .then(() => {
+                    input.value = "";
+                })
+                .catch((err) => {
+                    alert("댓글 저장 실패: " + err.message);
+                });
+        });
     };
 
     // -----------------------------------------------------------
@@ -445,7 +434,7 @@
 
     onValue(postsRef, (snapshot) => {
         if(loadingSpinner) loadingSpinner.style.display = 'none';
-        postsList.innerHTML = ""; // 초기화
+        postsList.innerHTML = "";
         
         const data = snapshot.val();
         if (!data) {
@@ -456,17 +445,13 @@
         const posts = Object.entries(data).reverse(); 
 
         posts.forEach(([id, post]) => {
-            // 좋아요 체크
             let likeClass = "text-[var(--text-main)]"; 
             if (currentUser && post.likes && post.likes[currentUser.uid]) {
                 likeClass = "fill-[var(--volt)] text-[var(--volt)]";
             }
-
-            // 댓글 수
             const commentCount = post.comments ? Object.keys(post.comments).length : 0;
             const authorImg = post.authorAvatar || DEFAULT_AVATAR;
 
-            // HTML 생성
             const html = `
             <div class="bg-[var(--bg-card)] rounded-2xl p-5 mb-4 shadow-sm border border-[var(--border-color)]">
                 <div class="flex items-center gap-3 mb-4">
@@ -517,7 +502,6 @@
             postsList.insertAdjacentHTML('beforeend', html);
         });
         
-        // 아이콘 렌더링
         if(window.lucide) window.lucide.createIcons();
     });
 
